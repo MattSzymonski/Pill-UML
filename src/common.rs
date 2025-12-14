@@ -1,0 +1,388 @@
+//! Common types, styling, and utilities shared across diagram types.
+
+use std::sync::LazyLock;
+
+// ============================================================================
+// Diagram Types
+// ============================================================================
+
+/// Supported diagram types
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DiagramType {
+    Sequence,
+    Class,
+}
+
+// ============================================================================
+// Styling
+// ============================================================================
+
+/// Unified style configuration for all diagram types
+#[derive(Debug, Clone)]
+pub struct DiagramStyle {
+    // Colors
+    pub background_color: String,
+    pub font_color: String,
+    pub border_color: String,
+    pub arrow_color: String,
+    pub arrow_thickness: f32,
+    
+    // Sequence diagram specific
+    pub participant_bg_color: String,
+    pub participant_border_color: String,
+    pub lifeline_color: String,
+    pub alt_bg_color: String,
+    pub alt_border_color: String,
+    
+    // Class diagram specific
+    pub class_bg_color: String,
+    pub class_border_color: String,
+    pub interface_bg_color: String,
+    
+    // Dimensions
+    pub margin: f32,
+    pub padding: f32,
+    pub font_size: f32,
+    pub char_width: f32,
+    pub spacing_x: f32,
+    pub spacing_y: f32,
+    
+    // Fonts
+    pub font_family: String,
+    pub embed_font: bool,
+}
+
+impl Default for DiagramStyle {
+    fn default() -> Self {
+        Self {
+            background_color: "#FFFFFF".into(),
+            font_color: "#333333".into(),
+            border_color: "#333333".into(),
+            arrow_color: "#333333".into(),
+            arrow_thickness: 1.5,
+            
+            participant_bg_color: "#F0F0F0".into(),
+            participant_border_color: "#333333".into(),
+            lifeline_color: "#666666".into(),
+            alt_bg_color: "#FAFAFA".into(),
+            alt_border_color: "#999999".into(),
+            
+            class_bg_color: "#F0F0F0".into(),
+            class_border_color: "#333333".into(),
+            interface_bg_color: "#E8F4E8".into(),
+            
+            margin: 30.0,
+            padding: 10.0,
+            font_size: 12.0,
+            char_width: 7.0,
+            spacing_x: 60.0,
+            spacing_y: 80.0,
+            
+            font_family: format!("'{}', monospace", FONT_FAMILY),
+            embed_font: true,
+        }
+    }
+}
+
+impl DiagramStyle {
+    /// Create style with custom font family
+    pub fn with_font_family(mut self, family: &str) -> Self {
+        self.font_family = family.to_string();
+        self.embed_font = false;
+        self
+    }
+    
+    /// Create style with custom background color
+    pub fn with_background_color(mut self, color: &str) -> Self {
+        self.background_color = color.to_string();
+        self
+    }
+    
+    /// Create style with custom font color
+    pub fn with_font_color(mut self, color: &str) -> Self {
+        self.font_color = color.to_string();
+        self
+    }
+    
+    /// Parse PlantUML skinparam syntax into style
+    pub fn from_skinparams(source: &str) -> Self {
+        let mut style = Self::default();
+        
+        for line in source.lines() {
+            let line = line.trim().to_lowercase();
+            if !line.starts_with("skinparam ") {
+                continue;
+            }
+            
+            let parts: Vec<&str> = line[10..].splitn(2, ' ').collect();
+            if parts.len() != 2 {
+                continue;
+            }
+            
+            let key = parts[0].trim();
+            let value = parts[1].trim();
+            
+            match key {
+                "backgroundcolor" => style.background_color = value.to_string(),
+                "arrowcolor" | "sequencearrowcolor" => style.arrow_color = value.to_string(),
+                "arrowthickness" => {
+                    if let Ok(v) = value.parse() {
+                        style.arrow_thickness = v;
+                    }
+                }
+                "defaultfontcolor" | "arrowfontcolor" => style.font_color = value.to_string(),
+                "defaultfontname" => {
+                    style.font_family = value.to_string();
+                    style.embed_font = false;
+                }
+                "defaultfontsize" => {
+                    if let Ok(v) = value.parse::<f32>() {
+                        style.font_size = v;
+                        style.char_width = v * 0.6;
+                    }
+                }
+                "sequenceparticipantbackgroundcolor" => {
+                    style.participant_bg_color = value.to_string();
+                }
+                "sequenceparticipantbordercolor" => {
+                    style.participant_border_color = value.to_string();
+                }
+                "sequencelifelinebordercolor" => style.lifeline_color = value.to_string(),
+                "classbackgroundcolor" => style.class_bg_color = value.to_string(),
+                "classbordercolor" => style.class_border_color = value.to_string(),
+                _ => {}
+            }
+        }
+        
+        style
+    }
+    
+    /// Merge skinparams from source, overriding current values
+    pub fn merge_skinparams(mut self, source: &str) -> Self {
+        for line in source.lines() {
+            let line = line.trim().to_lowercase();
+            if !line.starts_with("skinparam ") {
+                continue;
+            }
+            
+            let parts: Vec<&str> = line[10..].splitn(2, ' ').collect();
+            if parts.len() != 2 {
+                continue;
+            }
+            
+            let key = parts[0].trim();
+            let value = parts[1].trim();
+            
+            match key {
+                "backgroundcolor" => self.background_color = value.to_string(),
+                "arrowcolor" | "sequencearrowcolor" => self.arrow_color = value.to_string(),
+                "arrowthickness" => {
+                    if let Ok(v) = value.parse() {
+                        self.arrow_thickness = v;
+                    }
+                }
+                "defaultfontcolor" | "arrowfontcolor" => self.font_color = value.to_string(),
+                "defaultfontname" => {
+                    self.font_family = value.to_string();
+                    self.embed_font = false;
+                }
+                "defaultfontsize" => {
+                    if let Ok(v) = value.parse::<f32>() {
+                        self.font_size = v;
+                        self.char_width = v * 0.6;
+                    }
+                }
+                "sequenceparticipantbackgroundcolor" => {
+                    self.participant_bg_color = value.to_string();
+                }
+                "sequenceparticipantbordercolor" => {
+                    self.participant_border_color = value.to_string();
+                }
+                "sequencelifelinebordercolor" => self.lifeline_color = value.to_string(),
+                "classbackgroundcolor" => self.class_bg_color = value.to_string(),
+                "classbordercolor" => self.class_border_color = value.to_string(),
+                _ => {}
+            }
+        }
+        
+        self
+    }
+}
+
+// ============================================================================
+// Font Embedding
+// ============================================================================
+
+/// Embedded font file bytes
+const FONT_BYTES: &[u8] = include_bytes!("../../pill_engine/docs/uml/momo_trust.ttf");
+
+/// Base64-encoded font (computed lazily)
+static FONT_BASE64: LazyLock<String> = LazyLock::new(|| base64_encode(FONT_BYTES));
+
+/// Font family name for CSS
+pub const FONT_FAMILY: &str = "MomoTrust";
+
+/// Generate SVG font embedding CSS
+pub fn font_style_defs() -> String {
+    format!(
+        r#"<style type="text/css">
+@font-face {{
+    font-family: '{}';
+    src: url('data:font/truetype;base64,{}') format('truetype');
+}}
+</style>"#,
+        FONT_FAMILY,
+        FONT_BASE64.as_str()
+    )
+}
+
+/// Simple base64 encoder
+fn base64_encode(data: &[u8]) -> String {
+    const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    
+    let mut result = String::with_capacity((data.len() + 2) / 3 * 4);
+    
+    for chunk in data.chunks(3) {
+        let b0 = chunk[0] as u32;
+        let b1 = chunk.get(1).map(|&b| b as u32).unwrap_or(0);
+        let b2 = chunk.get(2).map(|&b| b as u32).unwrap_or(0);
+        
+        let triple = (b0 << 16) | (b1 << 8) | b2;
+        
+        result.push(ALPHABET[((triple >> 18) & 0x3F) as usize] as char);
+        result.push(ALPHABET[((triple >> 12) & 0x3F) as usize] as char);
+        result.push(if chunk.len() > 1 { ALPHABET[((triple >> 6) & 0x3F) as usize] as char } else { '=' });
+        result.push(if chunk.len() > 2 { ALPHABET[(triple & 0x3F) as usize] as char } else { '=' });
+    }
+    
+    result
+}
+
+// ============================================================================
+// SVG Utilities
+// ============================================================================
+
+/// SVG builder helper
+pub struct SvgBuilder {
+    output: String,
+}
+
+impl SvgBuilder {
+    pub fn new(width: f32, height: f32, style: &DiagramStyle) -> Self {
+        let mut output = format!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" width="{}" height="{}">"#,
+            width, height
+        );
+        
+        // Embed font if enabled
+        if style.embed_font {
+            output.push_str(&font_style_defs());
+        }
+        
+        // Background
+        output.push_str(&format!(
+            r#"<rect width="100%" height="100%" fill="{}"/>"#,
+            style.background_color
+        ));
+        
+        Self { output }
+    }
+    
+    pub fn push(&mut self, content: &str) {
+        self.output.push_str(content);
+    }
+    
+    pub fn line(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, color: &str, width: f32, dashed: bool) {
+        let dash = if dashed { r#" stroke-dasharray="5,5""# } else { "" };
+        self.output.push_str(&format!(
+            r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="{}"{}/>"#,
+            x1, y1, x2, y2, color, width, dash
+        ));
+    }
+    
+    pub fn rect(&mut self, x: f32, y: f32, w: f32, h: f32, fill: &str, stroke: &str) {
+        self.output.push_str(&format!(
+            r#"<rect x="{}" y="{}" width="{}" height="{}" fill="{}" stroke="{}" stroke-width="1"/>"#,
+            x, y, w, h, fill, stroke
+        ));
+    }
+    
+    #[allow(dead_code)]
+    pub fn text(&mut self, x: f32, y: f32, content: &str, style: &DiagramStyle) {
+        self.output.push_str(&format!(
+            r#"<text x="{}" y="{}" font-family="{}" font-size="{}" fill="{}">{}</text>"#,
+            x, y, style.font_family, style.font_size, style.font_color, escape_xml(content)
+        ));
+    }
+    
+    pub fn text_centered(&mut self, x: f32, y: f32, content: &str, style: &DiagramStyle, bold: bool) {
+        let weight = if bold { r#" font-weight="bold""# } else { "" };
+        self.output.push_str(&format!(
+            r#"<text x="{}" y="{}" font-family="{}" font-size="{}" fill="{}" text-anchor="middle"{}>{}</text>"#,
+            x, y, style.font_family, style.font_size, style.font_color, weight, escape_xml(content)
+        ));
+    }
+    
+    pub fn polyline(&mut self, points: &[(f32, f32)], color: &str, width: f32, dashed: bool, marker_end: &str) {
+        let points_str: String = points.iter()
+            .map(|(x, y)| format!("{},{}", x, y))
+            .collect::<Vec<_>>()
+            .join(" ");
+        
+        let dash = if dashed { format!(r#" stroke-dasharray="5,5""#) } else { String::new() };
+        let marker = if marker_end.is_empty() { String::new() } else { format!(r#" marker-end="{}""#, marker_end) };
+        
+        self.output.push_str(&format!(
+            r#"<polyline points="{}" fill="none" stroke="{}" stroke-width="{}"{}{}/>"#,
+            points_str, color, width, dash, marker
+        ));
+    }
+    
+    pub fn finish(mut self) -> String {
+        self.output.push_str("</svg>");
+        self.output
+    }
+    
+    #[allow(dead_code)]
+    pub fn raw(&self) -> &str {
+        &self.output
+    }
+}
+
+/// Escape XML special characters
+pub fn escape_xml(text: &str) -> String {
+    text.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_base64() {
+        assert_eq!(base64_encode(b"Hello"), "SGVsbG8=");
+        assert_eq!(base64_encode(b"ABC"), "QUJD");
+    }
+    
+    #[test]
+    fn test_style_builder() {
+        let style = DiagramStyle::default()
+            .with_background_color("#000000")
+            .with_font_color("#FFFFFF");
+        
+        assert_eq!(style.background_color, "#000000");
+        assert_eq!(style.font_color, "#FFFFFF");
+    }
+    
+    #[test]
+    fn test_skinparams() {
+        let params = "skinparam BackgroundColor #123456\nskinparam ArrowThickness 2";
+        let style = DiagramStyle::from_skinparams(params);
+        assert_eq!(style.background_color, "#123456");
+        assert_eq!(style.arrow_thickness, 2.0);
+    }
+}

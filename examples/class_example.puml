@@ -1,0 +1,45 @@
+@startuml
+' Override: use orange arrows instead of default green
+skinparam ArrowColor #ff8800
+
+abstract class Entity {
+    - id: u64
+    + get_id(): u64
+}
+
+class Player {
+    - name: String
+    - health: i32
+    + take_damage(amount: i32)
+    + heal(amount: i32)
+}
+
+class Enemy {
+    - damage: i32
+    - speed: f32
+    + attack(target: &Player)
+}
+
+interface Renderable {
+    + render(&self)
+    + get_bounds(): Rect
+}
+
+Entity <|-- Player
+Entity <|-- Enemy
+Renderable <|.. Player
+Renderable <|.. Enemy
+Player o-- Inventory
+Enemy *-- AIController
+
+class Inventory {
+    - items: Vec<Item>
+    + add_item(item: Item)
+    + remove_item(index: usize)
+}
+
+class AIController {
+    - state: AIState
+    + update(dt: f32)
+}
+@enduml

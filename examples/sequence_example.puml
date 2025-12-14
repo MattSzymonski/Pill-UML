@@ -1,0 +1,19 @@
+@startuml
+' Override: use cyan arrows instead of default green
+skinparam ArrowColor #00ccff
+
+participant Client
+participant Server
+participant Database
+
+Client -> Server: HTTP Request
+Server -> Database: Query
+Database --> Server: Result
+Server --> Client: HTTP Response
+
+alt Success
+    Client -> Client: Display Data
+else Failure
+    Client -> Client: Show Error
+end
+@enduml

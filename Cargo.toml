@@ -1,0 +1,13 @@
+[package]
+name = "pill_uml"
+version = "0.1.0"
+edition = "2021"
+description = "Native PlantUML diagram renderer for Rust - supports sequence and class diagrams"
+license = "MIT OR Apache-2.0"
+authors = ["MattSzymonski"]
+keywords = ["uml", "diagram", "plantuml", "svg"]
+categories = ["rendering", "graphics"]
+
+[dependencies]
+
+[dev-dependencies]
