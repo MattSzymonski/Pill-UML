@@ -157,21 +157,45 @@
     fill: #F0F0F0;
     stroke: #333333;
     stroke-width: 1;
+    /* Custom properties for SVG attributes */
+    --rx: 4;
+    --ry: 4;
+    /* Shadow properties */
+    --shadow-dx: 3;
+    --shadow-dy: 3;
+    --shadow-blur: 4;
+    --shadow-opacity: 0.25;
 }
 
-.class-interface {
+.interface {
     fill: #8ab2fc;
     stroke: #333333;
     stroke-width: 1;
+    /* Custom properties for SVG attributes */
+    --rx: 4;
+    --ry: 4;
+    /* Shadow properties */
+    --shadow-dx: 3;
+    --shadow-dy: 3;
+    --shadow-blur: 4;
+    --shadow-opacity: 0.25;
 }
 
-.class-abstract {
+.abstract-class {
     fill: #F0F0F0;
     stroke: #333333;
     stroke-width: 1;
+    /* Custom properties for SVG attributes */
+    --rx: 4;
+    --ry: 4;
+    /* Shadow properties */
+    --shadow-dx: 3;
+    --shadow-dy: 3;
+    --shadow-blur: 4;
+    --shadow-opacity: 0.25;
 }
 
-.class-enum {
+.enum {
     fill: #F0E8F4;
     stroke: #333333;
     stroke-width: 1;
@@ -197,7 +221,7 @@
 }
 
 /* Abstract class name */
-.abstract-name {
+.abstract-class-name {
     font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
     font-size: 12px;
     fill: #000000;
@@ -216,7 +240,17 @@
 
 /* Compartment separator */
 .class-separator {
+    stroke: #cccccc;
+    stroke-width: 1;
+}
+
+.interface-separator {
     stroke: #333333;
+    stroke-width: 1;
+}
+
+.abstract-class-separator {
+    stroke: #cccccc;
     stroke-width: 1;
 }
 
@@ -232,13 +266,13 @@
 }
 
 /* Abstract class fields */
-.abstract-field-name {
+.abstract-class-field-name {
     font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
     font-size: 12px;
     fill: #000000;
 }
 
-.abstract-field-name-static {
+.abstract-class-field-name-static {
     text-decoration: underline;
 }
 
@@ -269,17 +303,17 @@
 }
 
 /* Abstract class methods */
-.abstract-method-name {
+.abstract-class-method-name {
     font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
     font-size: 12px;
     fill: #000000;
 }
 
-.abstract-method-name-static {
+.abstract-class-method-name-static {
     text-decoration: underline;
 }
 
-.abstract-method-abstract {
+.abstract-class-method-name-abstract {
     font-style: italic;
 }
 

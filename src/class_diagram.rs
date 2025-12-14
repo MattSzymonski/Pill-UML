@@ -601,9 +601,9 @@ pub fn render_with_file_css(source: &str, style: &DiagramStyle, file_css: Option
     // Check for shadows on each class type and create filters
     let class_types = [
         ("class", "class-shadow"),
-        ("class-interface", "class-interface-shadow"),
-        ("class-abstract", "class-abstract-shadow"),
-        ("class-enum", "class-enum-shadow"),
+        ("interface", "interface-shadow"),
+        ("abstract-class", "abstract-class-shadow"),
+        ("enum", "enum-shadow"),
     ];
     for (class_name, filter_id) in &class_types {
         if svg.has_shadow(class_name) {
@@ -658,9 +658,9 @@ fn render_class(svg: &mut SvgBuilder, class: &ClassDef, style: &DiagramStyle) {
 
     // Determine class CSS based on type
     let (box_class, filter_id) = match class.class_type {
-        ClassType::Interface => ("class-interface", "class-interface-shadow"),
-        ClassType::Abstract => ("class-abstract", "class-abstract-shadow"),
-        ClassType::Enum => ("class-enum", "class-enum-shadow"),
+        ClassType::Interface => ("interface", "interface-shadow"),
+        ClassType::Abstract => ("abstract-class", "abstract-class-shadow"),
+        ClassType::Enum => ("enum", "enum-shadow"),
         ClassType::Class => ("class", "class-shadow"),
     };
 
@@ -703,7 +703,7 @@ fn render_class(svg: &mut SvgBuilder, class: &ClassDef, style: &DiagramStyle) {
     // Name (italic for interface/abstract)
     let name_class = match class.class_type {
         ClassType::Interface => "interface-name",
-        ClassType::Abstract => "abstract-name",
+        ClassType::Abstract => "abstract-class-name",
         _ => "class-name",
     };
     svg.text_class(
@@ -715,8 +715,15 @@ fn render_class(svg: &mut SvgBuilder, class: &ClassDef, style: &DiagramStyle) {
 
     y = class.y + compartment_height;
 
+    // Separator class based on type
+    let separator_class = match class.class_type {
+        ClassType::Interface => "interface-separator",
+        ClassType::Abstract => "abstract-class-separator",
+        _ => "class-separator",
+    };
+
     // Separator after header
-    svg.line_class(class.x, y, class.x + class.width, y, "class-separator");
+    svg.line_class(class.x, y, class.x + class.width, y, separator_class);
 
     // Fields (interfaces don't have fields, but we handle it gracefully)
     if !class.fields.is_empty() {
@@ -725,8 +732,10 @@ fn render_class(svg: &mut SvgBuilder, class: &ClassDef, style: &DiagramStyle) {
             y += field_height;
             let text = format_member(field.visibility, &field.name, field.field_type.as_deref());
             let field_class = match (class.class_type, field.is_static) {
-                (ClassType::Abstract, true) => "abstract-field-name abstract-field-name-static",
-                (ClassType::Abstract, false) => "abstract-field-name",
+                (ClassType::Abstract, true) => {
+                    "abstract-class-field-name abstract-class-field-name-static"
+                }
+                (ClassType::Abstract, false) => "abstract-class-field-name",
                 (_, true) => "class-field-name class-field-name-static",
                 (_, false) => "class-field-name",
             };
@@ -739,7 +748,7 @@ fn render_class(svg: &mut SvgBuilder, class: &ClassDef, style: &DiagramStyle) {
             ));
         }
         y += 4.0;
-        svg.line_class(class.x, y, class.x + class.width, y, "class-separator");
+        svg.line_class(class.x, y, class.x + class.width, y, separator_class);
     }
 
     // Methods
@@ -758,11 +767,11 @@ fn render_class(svg: &mut SvgBuilder, class: &ClassDef, style: &DiagramStyle) {
                 }
                 ClassType::Abstract => {
                     if method.is_static {
-                        "abstract-method-name abstract-method-name-static"
+                        "abstract-class-method-name abstract-class-method-name-static"
                     } else if method.is_abstract {
-                        "abstract-method-name abstract-method-name-abstract"
+                        "abstract-class-method-name abstract-class-method-name-abstract"
                     } else {
-                        "abstract-method-name"
+                        "abstract-class-method-name"
                     }
                 }
                 _ => {

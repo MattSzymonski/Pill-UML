@@ -58,10 +58,6 @@
     --shadow-opacity: 0.25;
 }
 
-.class-separator {
-    stroke: #89b4fa;
-}
-
 .class-name {
     fill: #cdd6f4;
 }
@@ -79,12 +75,12 @@
     fill: #ffffff;
 }
 
-.abstract-field-name,
-.abstract-method-name {
+.abstract-class-field-name,
+.abstract-class-method-name {
     fill: #1d1d1d;
 }
 
-.abstract-name {
+.abstract-class-name {
     font-style: italic;
     fill: #1d1d1d;
 }
