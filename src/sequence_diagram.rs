@@ -307,13 +307,19 @@ impl SequenceDiagram {
 // Renderer
 // ============================================================================
 
+/// Render diagram with default behavior (no file CSS)
 pub fn render(source: &str, style: &DiagramStyle) -> String {
+    render_with_file_css(source, style, None)
+}
+
+/// Render diagram with optional file CSS layer
+pub fn render_with_file_css(source: &str, style: &DiagramStyle, file_css: Option<&str>) -> String {
     let mut diagram = Parser::new().parse(source);
     diagram.layout(style);
 
     let (width, height) = diagram.calculate_dimensions(style);
-    let custom_css = crate::common::extract_custom_css(source);
-    let mut svg = SvgBuilder::new(width, height, style, custom_css.as_deref());
+    let inline_css = crate::common::extract_custom_css(source);
+    let mut svg = SvgBuilder::new(width, height, style, file_css, inline_css.as_deref());
 
     // Arrow markers with CSS classes
     svg.push(

@@ -211,8 +211,19 @@ pub struct SvgBuilder {
 }
 
 impl SvgBuilder {
-    /// Create new SVG builder with optional custom CSS overrides
-    pub fn new(width: f32, height: f32, style: &DiagramStyle, custom_css: Option<&str>) -> Self {
+    /// Create new SVG builder with optional CSS overrides
+    /// 
+    /// CSS is layered in this order (lowest to highest priority):
+    /// 1. Default styles (DEFAULT_STYLES_CSS)
+    /// 2. File CSS (from external .css file)
+    /// 3. Inline CSS (from @start_style/@end_style in source)
+    pub fn new(
+        width: f32,
+        height: f32,
+        style: &DiagramStyle,
+        file_css: Option<&str>,
+        inline_css: Option<&str>,
+    ) -> Self {
         let mut output = format!(
             r#"<svg xmlns="http://www.w3.org/2000/svg" width="{}" height="{}">"#,
             width, height
@@ -222,9 +233,15 @@ impl SvgBuilder {
         output.push_str("<style type=\"text/css\">\n");
         output.push_str(DEFAULT_STYLES_CSS);
         
-        // Append custom CSS overrides if provided
-        if let Some(css) = custom_css {
-            output.push_str("\n/* Custom style overrides */\n");
+        // Append file CSS overrides if provided (middle layer)
+        if let Some(css) = file_css {
+            output.push_str("\n/* Style file overrides */\n");
+            output.push_str(css);
+        }
+        
+        // Append inline CSS overrides if provided (top layer)
+        if let Some(css) = inline_css {
+            output.push_str("\n/* Inline style overrides */\n");
             output.push_str(css);
         }
         output.push_str("\n</style>");

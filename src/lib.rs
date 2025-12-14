@@ -25,6 +25,24 @@
 //! let svg = render_diagram(source);
 //! ```
 //!
+//! ## Builder Pattern with Style File
+//!
+//! You can use an external CSS file to override default styles:
+//!
+//! ```rust,ignore
+//! use pill_uml::create_diagram;
+//!
+//! let svg = create_diagram(source)
+//!     .with_style_file("path/to/styles.css")
+//!     .render();
+//! ```
+//!
+//! ## CSS Override Priority (lowest to highest)
+//!
+//! 1. Default styles (embedded in library)
+//! 2. External style file (via `.with_style_file()`)
+//! 3. Inline styles in `.pilluml` file (`@start_style`/`@end_style`)
+//!
 //! ## Custom Styling with CSS
 //!
 //! You can override default styles directly in your `.pilluml` file using
@@ -45,9 +63,97 @@ mod class_diagram;
 mod common;
 mod sequence_diagram;
 
+use std::fs;
+use std::path::Path;
+
 pub use class_diagram::{ClassDef, ClassDiagram, RelationType};
 pub use common::{DiagramStyle, DiagramType, DEFAULT_STYLES_CSS};
 pub use sequence_diagram::{ArrowStyle, Message, Participant, SequenceDiagram};
+
+// ============================================================================
+// Builder Pattern API
+// ============================================================================
+
+/// Builder for creating diagrams with optional style file
+pub struct DiagramBuilder<'a> {
+    source: &'a str,
+    style: DiagramStyle,
+    style_file_css: Option<String>,
+}
+
+impl<'a> DiagramBuilder<'a> {
+    /// Create a new diagram builder with the given source
+    pub fn new(source: &'a str) -> Self {
+        Self {
+            source,
+            style: DiagramStyle::default(),
+            style_file_css: None,
+        }
+    }
+
+    /// Set an external CSS style file to override default styles.
+    ///
+    /// The style file CSS is applied after the default styles but before
+    /// any inline `@start_style`/`@end_style` blocks in the source.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let svg = create_diagram(source)
+    ///     .with_style_file("my_theme.css")
+    ///     .render();
+    /// ```
+    pub fn with_style_file<P: AsRef<Path>>(mut self, path: P) -> Self {
+        match fs::read_to_string(path.as_ref()) {
+            Ok(css) => self.style_file_css = Some(css),
+            Err(e) => eprintln!("Warning: Could not read style file: {}", e),
+        }
+        self
+    }
+
+    /// Set CSS content directly (alternative to with_style_file)
+    pub fn with_style_css(mut self, css: &str) -> Self {
+        self.style_file_css = Some(css.to_string());
+        self
+    }
+
+    /// Set a custom DiagramStyle
+    pub fn with_diagram_style(mut self, style: DiagramStyle) -> Self {
+        self.style = style;
+        self
+    }
+
+    /// Render the diagram to SVG
+    pub fn render(self) -> String {
+        match detect_diagram_type(self.source) {
+            DiagramType::Sequence => sequence_diagram::render_with_file_css(
+                self.source,
+                &self.style,
+                self.style_file_css.as_deref(),
+            ),
+            DiagramType::Class => class_diagram::render_with_file_css(
+                self.source,
+                &self.style,
+                self.style_file_css.as_deref(),
+            ),
+        }
+    }
+}
+
+/// Create a diagram builder for the given source
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use pill_uml::create_diagram;
+///
+/// let svg = create_diagram(source)
+///     .with_style_file("theme.css")
+///     .render();
+/// ```
+pub fn create_diagram(source: &str) -> DiagramBuilder<'_> {
+    DiagramBuilder::new(source)
+}
 
 /// Detect the diagram type from source
 pub fn detect_diagram_type(source: &str) -> DiagramType {

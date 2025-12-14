@@ -273,12 +273,75 @@
     stroke: #333333;
     stroke-width: 1;
 }
-/* Custom style overrides */
+/* Style file overrides */
+/* Example theme file - Dark theme
+ * This CSS overrides the default styles.
+ * Inline @start_style blocks in .pilluml files will override these.
+ */
+
+/* Background */
+.diagram-background {
+    fill: #1e1e2e;
+}
+
+/* Sequence diagram participants */
+.participant {
+    fill: #313244;
+    stroke: #89b4fa;
+}
+
+.participant-text {
+    fill: #cdd6f4;
+}
+
+/* Messages */
+.message {
+    stroke: #a6e3a1;
+}
+
+.message-text {
+    fill: #cdd6f4;
+}
+
+.arrow-head {
+    fill: #a6e3a1;
+}
+
+/* Lifelines */
+.lifeline {
+    stroke: #585b70;
+}
+
+/* Class diagram */
+.class {
+    fill: #313244;
+    stroke: #89b4fa;
+}
+
+.class-name-text {
+    fill: #cdd6f4;
+}
+
+.class-field-text, .class-method-text {
+    fill: #bac2de;
+}
+
+/* Relationships */
+.relationship {
+    stroke: #f5c2e7;
+}
+
+.relationship-arrow {
+    fill: #f5c2e7;
+    stroke: #f5c2e7;
+}
+
+/* Inline style overrides */
 .message { stroke: #00ccff; }
 .arrow-head { fill: #00ccff; }
 .arrow-head-open { stroke: #00ccff; }
 .diagram-background {
-    fill: #702929ff;
+    fill: #2828a5ff;
 }
 </style><style type="text/css">
 @font-face {
