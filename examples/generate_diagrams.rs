@@ -22,14 +22,13 @@ fn main() {
     }
 
     // Additional inline style override (demonstrates with_style)
-    let extra_style = ".message-text { fill: #555555ff; }";
 
-    // Process sequence diagram using builder pattern
-    // Shows chaining: with_style_file() then with_style() - later overrides earlier
+    // --- Generate sequence diagram ---
     let sequence_pilluml_path = examples_dir.join("sequence_example.pilluml");
     let sequence_pilluml = fs::read_to_string(&sequence_pilluml_path)
         .expect("Failed to read sequence_example.pilluml");
 
+    let extra_style = ".message-text { fill: #555555ff; }";
     let sequence_svg = if has_theme {
         pill_uml::create_diagram(&sequence_pilluml)
             .with_style_file(&style_file_path) // base theme
@@ -43,8 +42,8 @@ fn main() {
     fs::write(&sequence_svg_path, &sequence_svg).expect("Failed to write sequence diagram");
     println!("✓ Generated: {}", sequence_svg_path.display());
 
-    // Process class diagram using builder pattern
-    // Shows chaining: with_style() then with_style_file() - file overrides string
+    // --- Generate class diagram ---
+
     let class_pilluml_path = examples_dir.join("class_example.pilluml");
     let class_pilluml =
         fs::read_to_string(&class_pilluml_path).expect("Failed to read class_example.pilluml");

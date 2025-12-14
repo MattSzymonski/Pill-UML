@@ -48,15 +48,45 @@
 .class {
     fill: #313244;
     stroke: #89b4fa;
+    /* Custom properties for SVG attributes */
+    --rx: 4;
+    --ry: 4;
+    /* Shadow properties */
+    --shadow-dx: 3;
+    --shadow-dy: 3;
+    --shadow-blur: 4;
+    --shadow-opacity: 0.25;
 }
 
-.class-name-text {
+.class-separator {
+    stroke: #89b4fa;
+}
+
+.class-name {
     fill: #cdd6f4;
 }
 
-.class-field-text,
-.class-method-text {
+.interface-name {
+    fill: #ffffff;
+}
+
+.class-field-name,
+.class-method-name {
     fill: #bac2de;
+}
+
+.interface-method-name {
+    fill: #ffffff;
+}
+
+.abstract-field-name,
+.abstract-method-name {
+    fill: #1d1d1d;
+}
+
+.abstract-name {
+    font-style: italic;
+    fill: #1d1d1d;
 }
 
 /* Relationships */

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="847" height="356"><style type="text/css">
+<svg xmlns="http://www.w3.org/2000/svg" width="655" height="517"><style type="text/css">
 /* Pill UML Default Styles */
 /* This file defines CSS classes for all diagram elements */
 
@@ -161,7 +161,7 @@
 }
 
 .class-interface {
-    fill: #E8F4E8;
+    fill: #8ab2fc;
     stroke: #333333;
     stroke-width: 1;
 }
@@ -187,12 +187,24 @@
     text-anchor: middle;
 }
 
-.class-name-abstract {
+/* Interface name */
+.interface-name {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #000000;
+    font-weight: bold;
     font-style: italic;
+    text-anchor: middle;
 }
 
-.class-name-interface {
+/* Abstract class name */
+.abstract-name {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #000000;
+    font-weight: bold;
     font-style: italic;
+    text-anchor: middle;
 }
 
 /* Stereotype */
@@ -210,28 +222,65 @@
 }
 
 /* Fields */
-.class-field {
+.class-field-name {
     font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
     font-size: 12px;
     fill: #333333;
 }
 
-.class-field-static {
+.class-field-name-static {
+    text-decoration: underline;
+}
+
+/* Abstract class fields */
+.abstract-field-name {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #000000;
+}
+
+.abstract-field-name-static {
     text-decoration: underline;
 }
 
 /* Methods */
-.class-method {
+.class-method-name {
     font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
     font-size: 12px;
     fill: #333333;
 }
 
-.class-method-static {
+.class-method-name-static {
     text-decoration: underline;
 }
 
-.class-method-abstract {
+.class-method-name-abstract {
+    font-style: italic;
+}
+
+/* Interface methods */
+.interface-method-name {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #000000;
+}
+
+.interface-method-name-static {
+    text-decoration: underline;
+}
+
+/* Abstract class methods */
+.abstract-method-name {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #000000;
+}
+
+.abstract-method-name-static {
+    text-decoration: underline;
+}
+
+.abstract-method-abstract {
     font-style: italic;
 }
 
@@ -325,15 +374,45 @@
 .class {
     fill: #313244;
     stroke: #89b4fa;
+    /* Custom properties for SVG attributes */
+    --rx: 4;
+    --ry: 4;
+    /* Shadow properties */
+    --shadow-dx: 3;
+    --shadow-dy: 3;
+    --shadow-blur: 4;
+    --shadow-opacity: 0.25;
 }
 
-.class-name-text {
+.class-separator {
+    stroke: #89b4fa;
+}
+
+.class-name {
     fill: #cdd6f4;
 }
 
-.class-field-text,
-.class-method-text {
+.interface-name {
+    fill: #ffffff;
+}
+
+.class-field-name,
+.class-method-name {
     fill: #bac2de;
+}
+
+.interface-method-name {
+    fill: #ffffff;
+}
+
+.abstract-field-name,
+.abstract-method-name {
+    fill: #1d1d1d;
+}
+
+.abstract-name {
+    font-style: italic;
+    fill: #1d1d1d;
 }
 
 /* Relationships */
@@ -349,6 +428,9 @@
 .relationship { stroke: #ff8800; }
 .relationship-arrow { fill: #ff8800; stroke: #ff8800; }
 </style><rect width="100%" height="100%" class="diagram-background"/><defs>
+<filter id="class-shadow" x="-50%" y="-50%" width="200%" height="200%">
+<feDropShadow dx="3" dy="3" stdDeviation="4" flood-opacity="0.25"/>
+</filter>
 <marker id="cls-triangle" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="10" markerHeight="10" orient="auto-start-reverse">
 <path d="M 0 0 L 10 5 L 0 10 z" class="marker-triangle"/>
 </marker>
@@ -361,4 +443,4 @@
 <marker id="cls-diamond-empty" viewBox="0 0 12 12" refX="12" refY="6" markerWidth="12" markerHeight="12" orient="auto-start-reverse">
 <path d="M 0 6 L 6 0 L 12 6 L 6 12 z" class="marker-diamond-empty"/>
 </marker>
-</defs><polyline points="127.5,209 127.5,160 303,160 303,111" class="relationship" marker-end="url(#cls-triangle)"/><polyline points="379,209 379,160 303,160 303,111" class="relationship" marker-end="url(#cls-triangle)"/><polyline points="127.5,209 127.5,155 106.5,155 106.5,101" class="relationship relationship-dashed" marker-end="url(#cls-triangle)"/><polyline points="379,209 379,155 106.5,155 106.5,101" class="relationship relationship-dashed" marker-end="url(#cls-triangle)"/><polyline points="225,267.5 324,267.5 324,79.5 423,79.5" class="relationship" marker-start="url(#cls-diamond-empty)"/><polyline points="473,258.5 579,258.5 579,70.5 685,70.5" class="relationship" marker-start="url(#cls-diamond-filled)"/><rect x="30" y="209" width="195" height="117" class="class"/><text x="127.5" y="225.5" class="class-name">Player</text><line x1="30" y1="234" x2="225" y2="234" class="class-separator"/><text x="40" y="256" class="class-field">-name: String</text><text x="40" y="274" class="class-field">-health: i32</text><line x1="30" y1="278" x2="225" y2="278" class="class-separator"/><text x="40" y="300" class="class-method">+take_damage(amount: i32)</text><text x="40" y="318" class="class-method">+heal(amount: i32)</text><rect x="285" y="209" width="188" height="99" class="class"/><text x="379" y="225.5" class="class-name">Enemy</text><line x1="285" y1="234" x2="473" y2="234" class="class-separator"/><text x="295" y="256" class="class-field">-damage: i32</text><text x="295" y="274" class="class-field">-speed: f32</text><line x1="285" y1="278" x2="473" y2="278" class="class-separator"/><text x="295" y="300" class="class-method">+attack(target: &amp;Player)</text><rect x="30" y="30" width="153" height="71" class="class-interface"/><text x="106.5" y="46.5" class="class-name class-name-interface">Renderable</text><line x1="30" y1="55" x2="183" y2="55" class="class-separator"/><text x="40" y="77" class="class-method">+render(&amp;self)</text><text x="40" y="95" class="class-method">+get_bounds(): Rect</text><rect x="243" y="30" width="120" height="81" class="class-abstract"/><text x="303" y="46.5" class="class-name class-name-abstract">Entity</text><line x1="243" y1="55" x2="363" y2="55" class="class-separator"/><text x="253" y="77" class="class-field">-id: u64</text><line x1="243" y1="81" x2="363" y2="81" class="class-separator"/><text x="253" y="103" class="class-method">+get_id(): u64</text><rect x="423" y="30" width="202" height="99" class="class"/><text x="524" y="46.5" class="class-name">Inventory</text><line x1="423" y1="55" x2="625" y2="55" class="class-separator"/><text x="433" y="77" class="class-field">-items: Vec&lt;Item&gt;</text><line x1="423" y1="81" x2="625" y2="81" class="class-separator"/><text x="433" y="103" class="class-method">+add_item(item: Item)</text><text x="433" y="121" class="class-method">+remove_item(index: usize)</text><rect x="685" y="30" width="132" height="81" class="class"/><text x="751" y="46.5" class="class-name">AIController</text><line x1="685" y1="55" x2="817" y2="55" class="class-separator"/><text x="695" y="77" class="class-field">-state: AIState</text><line x1="685" y1="81" x2="817" y2="81" class="class-separator"/><text x="695" y="103" class="class-method">+update(dt: f32)</text></svg>
+</defs><polyline points="127.5,209 127.5,160 303,160 303,111" class="relationship" marker-end="url(#cls-triangle)"/><polyline points="379,209 379,160 303,160 303,111" class="relationship" marker-end="url(#cls-triangle)"/><polyline points="127.5,209 127.5,155 106.5,155 106.5,101" class="relationship relationship-dashed" marker-end="url(#cls-triangle)"/><polyline points="379,209 379,155 106.5,155 106.5,101" class="relationship relationship-dashed" marker-end="url(#cls-triangle)"/><polyline points="225,267.5 324,267.5 324,79.5 423,79.5" class="relationship" marker-start="url(#cls-diamond-empty)"/><polyline points="285,258.5 223.5,258.5 223.5,446.5 162,446.5" class="relationship" marker-start="url(#cls-diamond-filled)"/><rect x="30" y="209" width="195" height="117" rx="4" ry="4" class="class" filter="url(#class-shadow)"/><text x="127.5" y="225.5" class="class-name">Player</text><line x1="30" y1="234" x2="225" y2="234" class="class-separator"/><text x="40" y="256" class="class-field-name">-name: String</text><text x="40" y="274" class="class-field-name">-health: i32</text><line x1="30" y1="278" x2="225" y2="278" class="class-separator"/><text x="40" y="300" class="class-method-name">+take_damage(amount: i32)</text><text x="40" y="318" class="class-method-name">+heal(amount: i32)</text><rect x="285" y="209" width="188" height="99" rx="4" ry="4" class="class" filter="url(#class-shadow)"/><text x="379" y="225.5" class="class-name">Enemy</text><line x1="285" y1="234" x2="473" y2="234" class="class-separator"/><text x="295" y="256" class="class-field-name">-damage: i32</text><text x="295" y="274" class="class-field-name">-speed: f32</text><line x1="285" y1="278" x2="473" y2="278" class="class-separator"/><text x="295" y="300" class="class-method-name">+attack(target: &amp;Player)</text><rect x="30" y="406" width="132" height="81" rx="4" ry="4" class="class" filter="url(#class-shadow)"/><text x="96" y="422.5" class="class-name">AIController</text><line x1="30" y1="431" x2="162" y2="431" class="class-separator"/><text x="40" y="453" class="class-field-name">-state: AIState</text><line x1="30" y1="457" x2="162" y2="457" class="class-separator"/><text x="40" y="479" class="class-method-name">+update(dt: f32)</text><rect x="30" y="30" width="153" height="71" rx="0" ry="0" class="class-interface"/><text x="106.5" y="46.5" class="interface-name">Renderable</text><line x1="30" y1="55" x2="183" y2="55" class="class-separator"/><text x="40" y="77" class="interface-method-name">+render(&amp;self)</text><text x="40" y="95" class="interface-method-name">+get_bounds(): Rect</text><rect x="243" y="30" width="120" height="81" rx="0" ry="0" class="class-abstract"/><text x="303" y="46.5" class="abstract-name">Entity</text><line x1="243" y1="55" x2="363" y2="55" class="class-separator"/><text x="253" y="77" class="abstract-field-name">-id: u64</text><line x1="243" y1="81" x2="363" y2="81" class="class-separator"/><text x="253" y="103" class="abstract-method-name">+get_id(): u64</text><rect x="423" y="30" width="202" height="99" rx="4" ry="4" class="class" filter="url(#class-shadow)"/><text x="524" y="46.5" class="class-name">Inventory</text><line x1="423" y1="55" x2="625" y2="55" class="class-separator"/><text x="433" y="77" class="class-field-name">-items: Vec&lt;Item&gt;</text><line x1="423" y1="81" x2="625" y2="81" class="class-separator"/><text x="433" y="103" class="class-method-name">+add_item(item: Item)</text><text x="433" y="121" class="class-method-name">+remove_item(index: usize)</text></svg>

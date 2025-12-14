@@ -160,7 +160,7 @@
 }
 
 .class-interface {
-    fill: #E8F4E8;
+    fill: #8ab2fc;
     stroke: #333333;
     stroke-width: 1;
 }
@@ -186,12 +186,24 @@
     text-anchor: middle;
 }
 
-.class-name-abstract {
+/* Interface name */
+.interface-name {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #000000;
+    font-weight: bold;
     font-style: italic;
+    text-anchor: middle;
 }
 
-.class-name-interface {
+/* Abstract class name */
+.abstract-name {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #000000;
+    font-weight: bold;
     font-style: italic;
+    text-anchor: middle;
 }
 
 /* Stereotype */
@@ -209,28 +221,65 @@
 }
 
 /* Fields */
-.class-field {
+.class-field-name {
     font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
     font-size: 12px;
     fill: #333333;
 }
 
-.class-field-static {
+.class-field-name-static {
+    text-decoration: underline;
+}
+
+/* Abstract class fields */
+.abstract-field-name {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #000000;
+}
+
+.abstract-field-name-static {
     text-decoration: underline;
 }
 
 /* Methods */
-.class-method {
+.class-method-name {
     font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
     font-size: 12px;
     fill: #333333;
 }
 
-.class-method-static {
+.class-method-name-static {
     text-decoration: underline;
 }
 
-.class-method-abstract {
+.class-method-name-abstract {
+    font-style: italic;
+}
+
+/* Interface methods */
+.interface-method-name {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #000000;
+}
+
+.interface-method-name-static {
+    text-decoration: underline;
+}
+
+/* Abstract class methods */
+.abstract-method-name {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #000000;
+}
+
+.abstract-method-name-static {
+    text-decoration: underline;
+}
+
+.abstract-method-abstract {
     font-style: italic;
 }
 
