@@ -4,7 +4,7 @@
 //!
 //! ## Styling Priority (lowest to highest):
 //! 1. Default styles (built into the library)
-//! 2. External CSS file (via `.with_style_file()`)
+//! 2. External CSS via `.with_style()` or `.with_style_file()` - in call order
 //! 3. Inline CSS in `.pilluml` file (`@start_style`/`@end_style`)
 
 use std::fs;
@@ -16,41 +16,48 @@ fn main() {
     // Check for optional shared style file
     let style_file_path = examples_dir.join("theme.css");
     let has_theme = style_file_path.exists();
-    
+
     if has_theme {
         println!("📄 Using theme file: {}", style_file_path.display());
     }
 
+    // Additional inline style override (demonstrates with_style)
+    let extra_style = ".message-text { fill: #555555ff; }";
+
     // Process sequence diagram using builder pattern
+    // Shows chaining: with_style_file() then with_style() - later overrides earlier
     let sequence_pilluml_path = examples_dir.join("sequence_example.pilluml");
     let sequence_pilluml = fs::read_to_string(&sequence_pilluml_path)
         .expect("Failed to read sequence_example.pilluml");
-    
+
     let sequence_svg = if has_theme {
         pill_uml::create_diagram(&sequence_pilluml)
-            .with_style_file(&style_file_path)
+            .with_style_file(&style_file_path) // base theme
+            .with_style(extra_style) // override on top
             .render()
     } else {
         pill_uml::render_diagram(&sequence_pilluml)
     };
-    
+
     let sequence_svg_path = examples_dir.join("sequence_example.svg");
     fs::write(&sequence_svg_path, &sequence_svg).expect("Failed to write sequence diagram");
     println!("✓ Generated: {}", sequence_svg_path.display());
 
     // Process class diagram using builder pattern
+    // Shows chaining: with_style() then with_style_file() - file overrides string
     let class_pilluml_path = examples_dir.join("class_example.pilluml");
-    let class_pilluml = fs::read_to_string(&class_pilluml_path)
-        .expect("Failed to read class_example.pilluml");
-    
+    let class_pilluml =
+        fs::read_to_string(&class_pilluml_path).expect("Failed to read class_example.pilluml");
+
     let class_svg = if has_theme {
         pill_uml::create_diagram(&class_pilluml)
-            .with_style_file(&style_file_path)
+            .with_style(".class { stroke: #0000ff; }") // will be overridden
+            .with_style_file(&style_file_path) // theme overrides above
             .render()
     } else {
         pill_uml::render_diagram(&class_pilluml)
     };
-    
+
     let class_svg_path = examples_dir.join("class_example.svg");
     fs::write(&class_svg_path, &class_svg).expect("Failed to write class diagram");
     println!("✓ Generated: {}", class_svg_path.display());

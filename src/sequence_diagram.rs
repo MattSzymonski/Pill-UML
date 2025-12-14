@@ -321,17 +321,38 @@ pub fn render_with_file_css(source: &str, style: &DiagramStyle, file_css: Option
     let inline_css = crate::common::extract_custom_css(source);
     let mut svg = SvgBuilder::new(width, height, style, file_css, inline_css.as_deref());
 
-    // Arrow markers with CSS classes
-    svg.push(
-        r#"<defs>
-<marker id="seq-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    // Get shadow properties from CSS
+    let shadow_dx = svg.css_prop_or("participant", "shadow-dx", 0.0);
+    let shadow_dy = svg.css_prop_or("participant", "shadow-dy", 0.0);
+    let shadow_blur = svg.css_prop_or("participant", "shadow-blur", 0.0);
+    let shadow_opacity = svg.css_prop_or("participant", "shadow-opacity", 0.3);
+    let has_participant_shadow = shadow_dx != 0.0 || shadow_dy != 0.0 || shadow_blur != 0.0;
+
+    // Arrow markers and shadow filters
+    let mut defs = String::from("<defs>\n");
+
+    // Arrow markers
+    defs.push_str(r#"<marker id="seq-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
 <polygon points="0 0, 10 3.5, 0 7" class="arrow-head"/>
 </marker>
 <marker id="seq-arrow-open" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
 <polyline points="0 0, 10 3.5, 0 7" class="arrow-head-open"/>
 </marker>
-</defs>"#,
-    );
+"#);
+
+    // Shadow filter for participants (if enabled)
+    if has_participant_shadow {
+        defs.push_str(&format!(
+            r#"<filter id="participant-shadow" x="-50%" y="-50%" width="200%" height="200%">
+<feDropShadow dx="{}" dy="{}" stdDeviation="{}" flood-opacity="{}"/>
+</filter>
+"#,
+            shadow_dx, shadow_dy, shadow_blur, shadow_opacity
+        ));
+    }
+
+    defs.push_str("</defs>");
+    svg.push(&defs);
 
     let participant_height = 35.0;
     let top_y = style.margin;
@@ -367,9 +388,9 @@ pub fn render_with_file_css(source: &str, style: &DiagramStyle, file_css: Option
                 let (left_x, right_x) = get_diagram_bounds(&diagram.participants, style);
                 alt_stack.push((current_y, left_x, right_x));
 
-                // Draw alt header
+                // Draw alt header - offset past the "alt" label box (which is ~40px wide)
                 svg.text_class(
-                    left_x + 5.0,
+                    left_x + 45.0,
                     current_y + 15.0,
                     &format!("[{}]", cond),
                     "alt-condition-text",
@@ -390,7 +411,8 @@ pub fn render_with_file_css(source: &str, style: &DiagramStyle, file_css: Option
                         );
                     }
                 }
-                current_y += message_spacing * 0.5;
+                // Add extra spacing after else to prevent overlap with next message
+                current_y += message_spacing * 0.5 + 16.0;
             }
             Element::AltEnd => {
                 if let Some((start_y, left_x, right_x)) = alt_stack.pop() {
@@ -403,13 +425,17 @@ pub fn render_with_file_css(source: &str, style: &DiagramStyle, file_css: Option
                         right_x - left_x,
                         box_height
                     ));
-                    // Alt label box
+                    // Alt label box - rectangle with cut bottom-right corner
+                    let box_width = 30.0;
+                    let box_height_label = 15.0;
+                    let cut_size = 8.0;
                     svg.polygon_class(
                         &[
-                            (left_x, start_y),
-                            (left_x + 30.0, start_y),
-                            (left_x + 40.0, start_y + 15.0),
-                            (left_x, start_y + 15.0),
+                            (left_x, start_y),                                           // top-left
+                            (left_x + box_width, start_y), // top-right
+                            (left_x + box_width, start_y + box_height_label - cut_size), // right edge before cut
+                            (left_x + box_width - cut_size, start_y + box_height_label), // cut corner
+                            (left_x, start_y + box_height_label), // bottom-left
                         ],
                         "alt-label-box",
                     );
@@ -432,7 +458,18 @@ fn draw_participant_box(
     _style: &DiagramStyle,
 ) {
     let x = p.x - p.width / 2.0;
-    svg.rect_class(x, y, p.width, height, "participant");
+    // Get border radius from CSS custom properties (--rx, --ry), default to 0
+    let rx = svg.css_prop_or("participant", "rx", 0.0);
+    let ry = svg.css_prop_or("participant", "ry", 0.0);
+
+    // Apply shadow filter if defined
+    let filter = if svg.has_shadow("participant") {
+        Some("participant-shadow")
+    } else {
+        None
+    };
+
+    svg.rect_rounded_class_filtered(x, y, p.width, height, rx, ry, "participant", filter);
     svg.text_class(p.x, y + height / 2.0 + 4.0, &p.name, "participant-text");
 }
 
@@ -475,9 +512,10 @@ fn draw_message(
         ];
         svg.polyline_class(&points, class, marker);
 
+        // Position text to the right of the loop, vertically centered
         svg.text_class(
-            from_p.x + loop_width + 5.0,
-            y + loop_height / 2.0 + 4.0,
+            from_p.x + loop_width + 6.0,
+            y - loop_height / 2.0 + 4.0,
             &msg.text,
             "message-text",
         );

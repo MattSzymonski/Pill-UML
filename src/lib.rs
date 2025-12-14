@@ -74,11 +74,16 @@ pub use sequence_diagram::{ArrowStyle, Message, Participant, SequenceDiagram};
 // Builder Pattern API
 // ============================================================================
 
-/// Builder for creating diagrams with optional style file
+/// Builder for creating diagrams with optional style overrides
+///
+/// CSS styles are applied in this order (lowest to highest priority):
+/// 1. Default styles (embedded in library)
+/// 2. External styles added via `with_style()` or `with_style_file()` - in call order
+/// 3. Inline styles in `.pilluml` file (`@start_style`/`@end_style`)
 pub struct DiagramBuilder<'a> {
     source: &'a str,
     style: DiagramStyle,
-    style_file_css: Option<String>,
+    external_css: Vec<String>,
 }
 
 impl<'a> DiagramBuilder<'a> {
@@ -87,37 +92,50 @@ impl<'a> DiagramBuilder<'a> {
         Self {
             source,
             style: DiagramStyle::default(),
-            style_file_css: None,
+            external_css: Vec::new(),
         }
     }
 
-    /// Set an external CSS style file to override default styles.
+    /// Add CSS from a file to override default styles.
     ///
-    /// The style file CSS is applied after the default styles but before
-    /// any inline `@start_style`/`@end_style` blocks in the source.
+    /// Multiple calls accumulate CSS in order. Later calls override earlier ones.
+    /// Inline `@start_style`/`@end_style` blocks in the source always have highest priority.
     ///
     /// # Example
     ///
     /// ```rust,ignore
     /// let svg = create_diagram(source)
-    ///     .with_style_file("my_theme.css")
+    ///     .with_style_file("base_theme.css")
+    ///     .with_style_file("overrides.css")  // overrides base_theme
     ///     .render();
     /// ```
     pub fn with_style_file<P: AsRef<Path>>(mut self, path: P) -> Self {
         match fs::read_to_string(path.as_ref()) {
-            Ok(css) => self.style_file_css = Some(css),
+            Ok(css) => self.external_css.push(css),
             Err(e) => eprintln!("Warning: Could not read style file: {}", e),
         }
         self
     }
 
-    /// Set CSS content directly (alternative to with_style_file)
-    pub fn with_style_css(mut self, css: &str) -> Self {
-        self.style_file_css = Some(css.to_string());
+    /// Add CSS string to override default styles.
+    ///
+    /// Multiple calls accumulate CSS in order. Later calls override earlier ones.
+    /// Inline `@start_style`/`@end_style` blocks in the source always have highest priority.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let svg = create_diagram(source)
+    ///     .with_style(".participant { fill: #333; }")
+    ///     .with_style_file("theme.css")  // overrides with_style
+    ///     .render();
+    /// ```
+    pub fn with_style(mut self, css: &str) -> Self {
+        self.external_css.push(css.to_string());
         self
     }
 
-    /// Set a custom DiagramStyle
+    /// Set a custom DiagramStyle for layout parameters
     pub fn with_diagram_style(mut self, style: DiagramStyle) -> Self {
         self.style = style;
         self
@@ -125,16 +143,23 @@ impl<'a> DiagramBuilder<'a> {
 
     /// Render the diagram to SVG
     pub fn render(self) -> String {
+        // Combine all external CSS into one string
+        let combined_css = if self.external_css.is_empty() {
+            None
+        } else {
+            Some(self.external_css.join("\n"))
+        };
+
         match detect_diagram_type(self.source) {
             DiagramType::Sequence => sequence_diagram::render_with_file_css(
                 self.source,
                 &self.style,
-                self.style_file_css.as_deref(),
+                combined_css.as_deref(),
             ),
             DiagramType::Class => class_diagram::render_with_file_css(
                 self.source,
                 &self.style,
-                self.style_file_css.as_deref(),
+                combined_css.as_deref(),
             ),
         }
     }

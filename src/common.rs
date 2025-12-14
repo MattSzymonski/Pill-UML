@@ -1,31 +1,31 @@
 //! Common types, styling, and utilities shared across diagram types.
 
-use std::sync::LazyLock;
+use std::collections::HashMap;
 
 // ============================================================================
 // Default CSS Styles
 // ============================================================================
 
 /// Embedded default CSS styles
-pub const DEFAULT_STYLES_CSS: &str = include_str!("./default_styles.css");
+pub const DEFAULT_STYLES_CSS: &str = include_str!("./default_theme.css");
 
 /// Extract custom CSS from @start_style / @end_style block in source
 pub fn extract_custom_css(source: &str) -> Option<String> {
     let mut in_style = false;
     let mut css_lines = Vec::new();
-    
+
     for line in source.lines() {
         let trimmed = line.trim();
-        
+
         if trimmed == "@start_style" {
             in_style = true;
             continue;
         }
-        
+
         if trimmed == "@end_style" {
             break;
         }
-        
+
         if in_style {
             // Skip comments
             if !trimmed.starts_with("//") {
@@ -33,11 +33,139 @@ pub fn extract_custom_css(source: &str) -> Option<String> {
             }
         }
     }
-    
+
     if css_lines.is_empty() {
         None
     } else {
         Some(css_lines.join("\n"))
+    }
+}
+
+/// Extract CSS custom properties (--property: value) for a specific class
+/// This allows controlling SVG attributes like rx/ry via CSS-like syntax
+pub fn extract_css_property(css: &str, class: &str, property: &str) -> Option<f32> {
+    // Find the class block
+    let class_pattern = format!(".{}", class);
+    let mut in_class = false;
+    let mut brace_depth = 0;
+
+    for line in css.lines() {
+        let trimmed = line.trim();
+
+        if trimmed.contains(&class_pattern) && trimmed.contains('{') {
+            in_class = true;
+            brace_depth = 1;
+            continue;
+        }
+
+        if in_class {
+            if trimmed.contains('{') {
+                brace_depth += 1;
+            }
+            if trimmed.contains('}') {
+                brace_depth -= 1;
+                if brace_depth == 0 {
+                    break;
+                }
+            }
+
+            // Look for --property: value;
+            let prop_pattern = format!("--{}:", property);
+            if let Some(pos) = trimmed.find(&prop_pattern) {
+                let value_start = pos + prop_pattern.len();
+                let value_str = &trimmed[value_start..];
+                // Extract number before ; or end of line
+                let value_str = value_str.trim().trim_end_matches(';').trim();
+                // Remove 'px' suffix if present
+                let value_str = value_str.trim_end_matches("px");
+                if let Ok(val) = value_str.parse::<f32>() {
+                    return Some(val);
+                }
+            }
+        }
+    }
+
+    None
+}
+
+/// Collected CSS custom properties for rendering
+#[derive(Debug, Clone, Default)]
+pub struct CssProperties {
+    properties: HashMap<String, HashMap<String, f32>>,
+}
+
+impl CssProperties {
+    /// Parse CSS and extract all custom properties (--name: value)
+    pub fn from_css(css: &str) -> Self {
+        let mut props = Self::default();
+        props.parse_css(css);
+        props
+    }
+
+    /// Parse and merge additional CSS
+    pub fn merge_css(&mut self, css: &str) {
+        self.parse_css(css);
+    }
+
+    fn parse_css(&mut self, css: &str) {
+        let mut current_class: Option<String> = None;
+        let mut brace_depth = 0;
+
+        for line in css.lines() {
+            let trimmed = line.trim();
+
+            // Check for class selector
+            if trimmed.starts_with('.') && trimmed.contains('{') {
+                if let Some(class_end) = trimmed.find(|c| c == ' ' || c == '{') {
+                    current_class = Some(trimmed[1..class_end].to_string());
+                    brace_depth = 1;
+                }
+                continue;
+            }
+
+            if current_class.is_some() {
+                if trimmed.contains('{') {
+                    brace_depth += 1;
+                }
+                if trimmed.contains('}') {
+                    brace_depth -= 1;
+                    if brace_depth == 0 {
+                        current_class = None;
+                    }
+                }
+
+                // Parse --property: value;
+                if let Some(pos) = trimmed.find("--") {
+                    if let Some(colon_pos) = trimmed[pos..].find(':') {
+                        let prop_name = trimmed[pos + 2..pos + colon_pos].trim().to_string();
+                        let value_start = pos + colon_pos + 1;
+                        let value_str = trimmed[value_start..].trim().trim_end_matches(';').trim();
+                        let value_str = value_str.trim_end_matches("px");
+
+                        if let Ok(val) = value_str.parse::<f32>() {
+                            if let Some(ref class) = current_class {
+                                self.properties
+                                    .entry(class.clone())
+                                    .or_default()
+                                    .insert(prop_name, val);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Get a property value for a class
+    pub fn get(&self, class: &str, property: &str) -> Option<f32> {
+        self.properties
+            .get(class)
+            .and_then(|m| m.get(property).copied())
+    }
+
+    /// Get a property value with a default
+    pub fn get_or(&self, class: &str, property: &str, default: f32) -> f32 {
+        self.get(class, property).unwrap_or(default)
     }
 }
 
@@ -88,7 +216,6 @@ pub struct DiagramStyle {
 
     // Fonts
     pub font_family: String,
-    pub embed_font: bool,
 }
 
 impl Default for DiagramStyle {
@@ -117,8 +244,7 @@ impl Default for DiagramStyle {
             spacing_x: 60.0,
             spacing_y: 80.0,
 
-            font_family: format!("'{}', monospace", FONT_FAMILY),
-            embed_font: true,
+            font_family: "'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif".into(),
         }
     }
 }
@@ -127,7 +253,6 @@ impl DiagramStyle {
     /// Create style with custom font family
     pub fn with_font_family(mut self, family: &str) -> Self {
         self.font_family = family.to_string();
-        self.embed_font = false;
         self
     }
 
@@ -145,74 +270,18 @@ impl DiagramStyle {
 }
 
 // ============================================================================
-// Font Embedding
-// ============================================================================
-
-/// Embedded font file bytes
-const FONT_BYTES: &[u8] = include_bytes!("./inter.ttf");
-
-/// Base64-encoded font (computed lazily)
-static FONT_BASE64: LazyLock<String> = LazyLock::new(|| base64_encode(FONT_BYTES));
-
-/// Font family name for CSS
-pub const FONT_FAMILY: &str = "MomoTrust";
-
-/// Generate SVG font embedding CSS
-pub fn font_style_defs() -> String {
-    format!(
-        r#"<style type="text/css">
-@font-face {{
-    font-family: '{}';
-    src: url('data:font/truetype;base64,{}') format('truetype');
-}}
-</style>"#,
-        FONT_FAMILY,
-        FONT_BASE64.as_str()
-    )
-}
-
-/// Simple base64 encoder
-fn base64_encode(data: &[u8]) -> String {
-    const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-    let mut result = String::with_capacity((data.len() + 2) / 3 * 4);
-
-    for chunk in data.chunks(3) {
-        let b0 = chunk[0] as u32;
-        let b1 = chunk.get(1).map(|&b| b as u32).unwrap_or(0);
-        let b2 = chunk.get(2).map(|&b| b as u32).unwrap_or(0);
-
-        let triple = (b0 << 16) | (b1 << 8) | b2;
-
-        result.push(ALPHABET[((triple >> 18) & 0x3F) as usize] as char);
-        result.push(ALPHABET[((triple >> 12) & 0x3F) as usize] as char);
-        result.push(if chunk.len() > 1 {
-            ALPHABET[((triple >> 6) & 0x3F) as usize] as char
-        } else {
-            '='
-        });
-        result.push(if chunk.len() > 2 {
-            ALPHABET[(triple & 0x3F) as usize] as char
-        } else {
-            '='
-        });
-    }
-
-    result
-}
-
-// ============================================================================
 // SVG Utilities
 // ============================================================================
 
 /// SVG builder helper
 pub struct SvgBuilder {
     output: String,
+    css_props: CssProperties,
 }
 
 impl SvgBuilder {
     /// Create new SVG builder with optional CSS overrides
-    /// 
+    ///
     /// CSS is layered in this order (lowest to highest priority):
     /// 1. Default styles (DEFAULT_STYLES_CSS)
     /// 2. File CSS (from external .css file)
@@ -220,10 +289,19 @@ impl SvgBuilder {
     pub fn new(
         width: f32,
         height: f32,
-        style: &DiagramStyle,
+        _style: &DiagramStyle,
         file_css: Option<&str>,
         inline_css: Option<&str>,
     ) -> Self {
+        // Parse CSS properties from all layers (in order of priority)
+        let mut css_props = CssProperties::from_css(DEFAULT_STYLES_CSS);
+        if let Some(css) = file_css {
+            css_props.merge_css(css);
+        }
+        if let Some(css) = inline_css {
+            css_props.merge_css(css);
+        }
+
         let mut output = format!(
             r#"<svg xmlns="http://www.w3.org/2000/svg" width="{}" height="{}">"#,
             width, height
@@ -232,13 +310,13 @@ impl SvgBuilder {
         // Embed default CSS styles
         output.push_str("<style type=\"text/css\">\n");
         output.push_str(DEFAULT_STYLES_CSS);
-        
+
         // Append file CSS overrides if provided (middle layer)
         if let Some(css) = file_css {
             output.push_str("\n/* Style file overrides */\n");
             output.push_str(css);
         }
-        
+
         // Append inline CSS overrides if provided (top layer)
         if let Some(css) = inline_css {
             output.push_str("\n/* Inline style overrides */\n");
@@ -246,25 +324,30 @@ impl SvgBuilder {
         }
         output.push_str("\n</style>");
 
-        // Embed font if enabled
-        if style.embed_font {
-            output.push_str(&font_style_defs());
-        }
-
         // Background
         output.push_str(r#"<rect width="100%" height="100%" class="diagram-background"/>"#);
 
-        Self { output }
+        Self { output, css_props }
+    }
+
+    /// Get a CSS custom property value (--name) for a class
+    pub fn css_prop(&self, class: &str, property: &str) -> Option<f32> {
+        self.css_props.get(class, property)
+    }
+
+    /// Get a CSS custom property value with default
+    pub fn css_prop_or(&self, class: &str, property: &str, default: f32) -> f32 {
+        self.css_props.get_or(class, property, default)
     }
 
     pub fn push(&mut self, content: &str) {
         self.output.push_str(content);
     }
-    
+
     // ========================================================================
     // CSS class-based methods
     // ========================================================================
-    
+
     /// Draw a rectangle with CSS class
     pub fn rect_class(&mut self, x: f32, y: f32, w: f32, h: f32, class: &str) {
         self.output.push_str(&format!(
@@ -272,7 +355,53 @@ impl SvgBuilder {
             x, y, w, h, class
         ));
     }
-    
+
+    /// Draw a rectangle with CSS class and rounded corners
+    pub fn rect_rounded_class(
+        &mut self,
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        rx: f32,
+        ry: f32,
+        class: &str,
+    ) {
+        self.output.push_str(&format!(
+            r#"<rect x="{}" y="{}" width="{}" height="{}" rx="{}" ry="{}" class="{}"/>"#,
+            x, y, w, h, rx, ry, class
+        ));
+    }
+
+    /// Draw a rectangle with CSS class, rounded corners, and optional filter
+    pub fn rect_rounded_class_filtered(
+        &mut self,
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        rx: f32,
+        ry: f32,
+        class: &str,
+        filter: Option<&str>,
+    ) {
+        let filter_attr = filter
+            .map(|f| format!(r#" filter="url(#{})""#, f))
+            .unwrap_or_default();
+        self.output.push_str(&format!(
+            r#"<rect x="{}" y="{}" width="{}" height="{}" rx="{}" ry="{}" class="{}"{}/>"#,
+            x, y, w, h, rx, ry, class, filter_attr
+        ));
+    }
+
+    /// Check if a shadow is defined for a class (any shadow property is non-zero)
+    pub fn has_shadow(&self, class: &str) -> bool {
+        let dx = self.css_prop_or(class, "shadow-dx", 0.0);
+        let dy = self.css_prop_or(class, "shadow-dy", 0.0);
+        let blur = self.css_prop_or(class, "shadow-blur", 0.0);
+        dx != 0.0 || dy != 0.0 || blur != 0.0
+    }
+
     /// Draw a line with CSS class
     pub fn line_class(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, class: &str) {
         self.output.push_str(&format!(
@@ -280,15 +409,18 @@ impl SvgBuilder {
             x1, y1, x2, y2, class
         ));
     }
-    
+
     /// Draw text with CSS class
     pub fn text_class(&mut self, x: f32, y: f32, content: &str, class: &str) {
         self.output.push_str(&format!(
             r#"<text x="{}" y="{}" class="{}">{}</text>"#,
-            x, y, class, escape_xml(content)
+            x,
+            y,
+            class,
+            escape_xml(content)
         ));
     }
-    
+
     /// Draw a polyline with CSS class
     pub fn polyline_class(&mut self, points: &[(f32, f32)], class: &str, marker_end: &str) {
         let points_str: String = points
@@ -308,7 +440,7 @@ impl SvgBuilder {
             points_str, class, marker
         ));
     }
-    
+
     /// Draw a polygon with CSS class
     pub fn polygon_class(&mut self, points: &[(f32, f32)], class: &str) {
         let points_str: String = points
@@ -443,12 +575,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_base64() {
-        assert_eq!(base64_encode(b"Hello"), "SGVsbG8=");
-        assert_eq!(base64_encode(b"ABC"), "QUJD");
-    }
-
-    #[test]
     fn test_style_builder() {
         let style = DiagramStyle::default()
             .with_background_color("#000000")
@@ -465,7 +591,7 @@ mod tests {
         assert!(css.is_some());
         assert!(css.unwrap().contains(".test { fill: red; }"));
     }
-    
+
     #[test]
     fn test_extract_custom_css_none() {
         let source = "@start_uml\nA -> B: test\n@end_uml";

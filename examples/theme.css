@@ -5,13 +5,21 @@
 
 /* Background */
 .diagram-background {
-    fill: #1e1e2e;
+    fill: #ffffff;
 }
 
 /* Sequence diagram participants */
 .participant {
-    fill: #313244;
+    fill: #33377a;
     stroke: #89b4fa;
+    /* Custom properties for SVG attributes */
+    --rx: 4;
+    --ry: 4;
+    /* Shadow properties */
+    --shadow-dx: 3;
+    --shadow-dy: 3;
+    --shadow-blur: 4;
+    --shadow-opacity: 0.25;
 }
 
 .participant-text {
