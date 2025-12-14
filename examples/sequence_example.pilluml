@@ -1,7 +1,11 @@
-@startuml
-' Override: use cyan arrows instead of default green
-skinparam ArrowColor #00ccff
+@start_style
+// Override: use cyan arrows instead of default
+.message { stroke: #00ccff; }
+.arrow-head { fill: #00ccff; }
+.arrow-head-open { stroke: #00ccff; }
+@end_style
 
+@start_uml
 participant Client
 participant Server
 participant Database
@@ -16,4 +20,4 @@ alt Success
 else Failure
     Client -> Client: Show Error
 end
-@enduml
+@end_uml

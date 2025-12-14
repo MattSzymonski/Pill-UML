@@ -138,15 +138,15 @@ impl Parser {
         for line in source.lines() {
             let line = line.trim();
             
-            if line.is_empty() || line.starts_with('\'') || line.starts_with("skinparam") {
+            if line.is_empty() || line.starts_with("//") || line.starts_with("skinparam") {
                 continue;
             }
             
-            if line.starts_with("@startuml") {
+            if line.starts_with("@start_uml") {
                 in_diagram = true;
                 continue;
             }
-            if line.starts_with("@enduml") {
+            if line.starts_with("@end_uml") {
                 break;
             }
             
@@ -504,26 +504,26 @@ pub fn render(source: &str, style: &DiagramStyle) -> String {
     diagram.layout(style);
     
     let (width, height) = diagram.bounds(style);
-    let mut svg = SvgBuilder::new(width, height, style);
+    let custom_css = crate::common::extract_custom_css(source);
+    let mut svg = SvgBuilder::new(width, height, style, custom_css.as_deref());
     
-    // Markers for arrows
-    svg.push(&format!(
+    // Markers for arrows with CSS classes
+    svg.push(
         r#"<defs>
 <marker id="cls-triangle" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="10" markerHeight="10" orient="auto-start-reverse">
-<path d="M 0 0 L 10 5 L 0 10 z" fill="white" stroke="{}" stroke-width="1"/>
+<path d="M 0 0 L 10 5 L 0 10 z" class="marker-triangle"/>
 </marker>
 <marker id="cls-arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-<path d="M 0 0 L 10 5 L 0 10 z" fill="{}"/>
+<path d="M 0 0 L 10 5 L 0 10 z" class="marker-arrow"/>
 </marker>
 <marker id="cls-diamond-filled" viewBox="0 0 12 12" refX="12" refY="6" markerWidth="12" markerHeight="12" orient="auto-start-reverse">
-<path d="M 0 6 L 6 0 L 12 6 L 6 12 z" fill="{}"/>
+<path d="M 0 6 L 6 0 L 12 6 L 6 12 z" class="marker-diamond-filled"/>
 </marker>
 <marker id="cls-diamond-empty" viewBox="0 0 12 12" refX="12" refY="6" markerWidth="12" markerHeight="12" orient="auto-start-reverse">
-<path d="M 0 6 L 6 0 L 12 6 L 6 12 z" fill="white" stroke="{}" stroke-width="1"/>
+<path d="M 0 6 L 6 0 L 12 6 L 6 12 z" class="marker-diamond-empty"/>
 </marker>
-</defs>"#,
-        style.arrow_color, style.arrow_color, style.arrow_color, style.arrow_color
-    ));
+</defs>"#
+    );
     
     // Render relationships first (behind classes)
     for rel in &diagram.relationships {
@@ -542,39 +542,47 @@ fn render_class(svg: &mut SvgBuilder, class: &ClassDef, style: &DiagramStyle) {
     let compartment_height = 25.0;
     let field_height = 18.0;
     
-    let bg = match class.class_type {
-        ClassType::Interface => &style.interface_bg_color,
-        _ => &style.class_bg_color,
+    // Determine class CSS based on type
+    let box_class = match class.class_type {
+        ClassType::Interface => "class-interface",
+        ClassType::Abstract => "class-abstract",
+        ClassType::Enum => "class-enum",
+        ClassType::Class => "class",
     };
     
     // Main box
-    svg.rect(class.x, class.y, class.width, class.height, bg, &style.class_border_color);
+    svg.rect_class(class.x, class.y, class.width, class.height, box_class);
     
     let mut y = class.y;
     
     // Stereotype
     if let Some(ref stereo) = class.stereotype {
-        svg.push(&format!(
-            r#"<text x="{}" y="{}" font-family="{}" font-size="{}" fill="{}" text-anchor="middle">&lt;&lt;{}&gt;&gt;</text>"#,
-            class.x + class.width / 2.0, y + 12.0, style.font_family, style.font_size - 2.0,
-            style.font_color, escape_xml(stereo)
-        ));
+        svg.text_class(
+            class.x + class.width / 2.0, 
+            y + 12.0, 
+            &format!("<<{}>>", stereo), 
+            "class-stereotype"
+        );
         y += 10.0;
     }
     
     // Name (italic for interface/abstract)
-    let italic = matches!(class.class_type, ClassType::Interface | ClassType::Abstract);
-    let font_style = if italic { r#" font-style="italic""# } else { "" };
-    svg.push(&format!(
-        r#"<text x="{}" y="{}" font-family="{}" font-size="{}" fill="{}" text-anchor="middle" font-weight="bold"{}>{}</text>"#,
-        class.x + class.width / 2.0, y + compartment_height / 2.0 + 4.0, style.font_family,
-        style.font_size, style.font_color, font_style, escape_xml(&class.name)
-    ));
+    let name_class = match class.class_type {
+        ClassType::Interface => "class-name class-name-interface",
+        ClassType::Abstract => "class-name class-name-abstract",
+        _ => "class-name",
+    };
+    svg.text_class(
+        class.x + class.width / 2.0, 
+        y + compartment_height / 2.0 + 4.0, 
+        &class.name, 
+        name_class
+    );
     
     y = class.y + compartment_height;
     
     // Separator after header
-    svg.line(class.x, y, class.x + class.width, y, &style.class_border_color, 1.0, false);
+    svg.line_class(class.x, y, class.x + class.width, y, "class-separator");
     
     // Fields
     if !class.fields.is_empty() {
@@ -582,15 +590,14 @@ fn render_class(svg: &mut SvgBuilder, class: &ClassDef, style: &DiagramStyle) {
         for field in &class.fields {
             y += field_height;
             let text = format_member(field.visibility, &field.name, field.field_type.as_deref());
-            let decoration = if field.is_static { r#" text-decoration="underline""# } else { "" };
+            let field_class = if field.is_static { "class-field class-field-static" } else { "class-field" };
             svg.push(&format!(
-                r#"<text x="{}" y="{}" font-family="{}" font-size="{}" fill="{}"{}>{}</text>"#,
-                class.x + style.padding, y, style.font_family, style.font_size,
-                style.font_color, decoration, escape_xml(&text)
+                r#"<text x="{}" y="{}" class="{}">{}</text>"#,
+                class.x + style.padding, y, field_class, escape_xml(&text)
             ));
         }
         y += 4.0;
-        svg.line(class.x, y, class.x + class.width, y, &style.class_border_color, 1.0, false);
+        svg.line_class(class.x, y, class.x + class.width, y, "class-separator");
     }
     
     // Methods
@@ -599,23 +606,22 @@ fn render_class(svg: &mut SvgBuilder, class: &ClassDef, style: &DiagramStyle) {
         for method in &class.methods {
             y += field_height;
             let text = format_method_text(method);
-            let style_attr = if method.is_static {
-                r#" text-decoration="underline""#
+            let method_class = if method.is_static {
+                "class-method class-method-static"
             } else if method.is_abstract {
-                r#" font-style="italic""#
+                "class-method class-method-abstract"
             } else {
-                ""
+                "class-method"
             };
             svg.push(&format!(
-                r#"<text x="{}" y="{}" font-family="{}" font-size="{}" fill="{}"{}>{}</text>"#,
-                class.x + style.padding, y, style.font_family, style.font_size,
-                style.font_color, style_attr, escape_xml(&text)
+                r#"<text x="{}" y="{}" class="{}">{}</text>"#,
+                class.x + style.padding, y, method_class, escape_xml(&text)
             ));
         }
     }
 }
 
-fn render_relationship(svg: &mut SvgBuilder, diagram: &ClassDiagram, rel: &Relationship, style: &DiagramStyle) {
+fn render_relationship(svg: &mut SvgBuilder, diagram: &ClassDiagram, rel: &Relationship, _style: &DiagramStyle) {
     let from = diagram.classes.iter().find(|c| c.name == rel.from);
     let to = diagram.classes.iter().find(|c| c.name == rel.to);
     
@@ -638,19 +644,19 @@ fn render_relationship(svg: &mut SvgBuilder, diagram: &ClassDiagram, rel: &Relat
     
     if !points.is_empty() {
         let points_str: String = points.iter().map(|(x, y)| format!("{},{}", x, y)).collect::<Vec<_>>().join(" ");
-        let dash = if dashed { r#" stroke-dasharray="5,5""# } else { "" };
+        let class = if dashed { "relationship relationship-dashed" } else { "relationship" };
         let ms = if marker_start.is_empty() { String::new() } else { format!(r#" marker-start="{}""#, marker_start) };
         let me = if marker_end.is_empty() { String::new() } else { format!(r#" marker-end="{}""#, marker_end) };
         
         svg.push(&format!(
-            r#"<polyline points="{}" fill="none" stroke="{}" stroke-width="1.5"{}{}{}/>"#,
-            points_str, style.arrow_color, dash, ms, me
+            r#"<polyline points="{}" class="{}"{}{}/>"#,
+            points_str, class, ms, me
         ));
         
         if let Some(ref label) = rel.label {
             let mid = points.len() / 2;
             let (mx, my) = points.get(mid).copied().unwrap_or((0.0, 0.0));
-            svg.text_centered(mx, my - 5.0, label, style, false);
+            svg.text_class(mx, my - 5.0, label, "relationship-label");
         }
     }
 }
@@ -755,7 +761,7 @@ mod tests {
     
     #[test]
     fn test_parse_class() {
-        let source = "@startuml\nclass Foo {\n- x: i32\n+ bar(): void\n}\n@enduml";
+        let source = "@start_uml\nclass Foo {\n- x: i32\n+ bar(): void\n}\n@end_uml";
         let diagram = Parser::new().parse(source);
         assert_eq!(diagram.classes.len(), 1);
         assert_eq!(diagram.classes[0].fields.len(), 1);
@@ -764,7 +770,7 @@ mod tests {
     
     #[test]
     fn test_parse_relationship() {
-        let source = "@startuml\nA --|> B\n@enduml";
+        let source = "@start_uml\nA --|> B\n@end_uml";
         let diagram = Parser::new().parse(source);
         assert_eq!(diagram.relationships.len(), 1);
         assert_eq!(diagram.relationships[0].rel_type, RelationType::Inheritance);

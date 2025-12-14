@@ -1,7 +1,10 @@
-@startuml
-' Override: use orange arrows instead of default green
-skinparam ArrowColor #ff8800
+@start_style
+// Override: use orange relationship lines instead of default
+.relationship { stroke: #ff8800; }
+.relationship-arrow { fill: #ff8800; stroke: #ff8800; }
+@end_style
 
+@start_uml
 abstract class Entity {
     - id: u64
     + get_id(): u64
@@ -42,4 +45,4 @@ class AIController {
     - state: AIState
     + update(dt: f32)
 }
-@enduml
+@end_uml

@@ -3,6 +3,45 @@
 use std::sync::LazyLock;
 
 // ============================================================================
+// Default CSS Styles
+// ============================================================================
+
+/// Embedded default CSS styles
+pub const DEFAULT_STYLES_CSS: &str = include_str!("./default_styles.css");
+
+/// Extract custom CSS from @start_style / @end_style block in source
+pub fn extract_custom_css(source: &str) -> Option<String> {
+    let mut in_style = false;
+    let mut css_lines = Vec::new();
+    
+    for line in source.lines() {
+        let trimmed = line.trim();
+        
+        if trimmed == "@start_style" {
+            in_style = true;
+            continue;
+        }
+        
+        if trimmed == "@end_style" {
+            break;
+        }
+        
+        if in_style {
+            // Skip comments
+            if !trimmed.starts_with("//") {
+                css_lines.push(line);
+            }
+        }
+    }
+    
+    if css_lines.is_empty() {
+        None
+    } else {
+        Some(css_lines.join("\n"))
+    }
+}
+
+// ============================================================================
 // Diagram Types
 // ============================================================================
 
@@ -103,110 +142,6 @@ impl DiagramStyle {
         self.font_color = color.to_string();
         self
     }
-
-    /// Parse PlantUML skinparam syntax into style
-    pub fn from_skinparams(source: &str) -> Self {
-        let mut style = Self::default();
-
-        for line in source.lines() {
-            let line = line.trim().to_lowercase();
-            if !line.starts_with("skinparam ") {
-                continue;
-            }
-
-            let parts: Vec<&str> = line[10..].splitn(2, ' ').collect();
-            if parts.len() != 2 {
-                continue;
-            }
-
-            let key = parts[0].trim();
-            let value = parts[1].trim();
-
-            match key {
-                "backgroundcolor" => style.background_color = value.to_string(),
-                "arrowcolor" | "sequencearrowcolor" => style.arrow_color = value.to_string(),
-                "arrowthickness" => {
-                    if let Ok(v) = value.parse() {
-                        style.arrow_thickness = v;
-                    }
-                }
-                "defaultfontcolor" | "arrowfontcolor" => style.font_color = value.to_string(),
-                "defaultfontname" => {
-                    style.font_family = value.to_string();
-                    style.embed_font = false;
-                }
-                "defaultfontsize" => {
-                    if let Ok(v) = value.parse::<f32>() {
-                        style.font_size = v;
-                        style.char_width = v * 0.6;
-                    }
-                }
-                "sequenceparticipantbackgroundcolor" => {
-                    style.participant_bg_color = value.to_string();
-                }
-                "sequenceparticipantbordercolor" => {
-                    style.participant_border_color = value.to_string();
-                }
-                "sequencelifelinebordercolor" => style.lifeline_color = value.to_string(),
-                "classbackgroundcolor" => style.class_bg_color = value.to_string(),
-                "classbordercolor" => style.class_border_color = value.to_string(),
-                _ => {}
-            }
-        }
-
-        style
-    }
-
-    /// Merge skinparams from source, overriding current values
-    pub fn merge_skinparams(mut self, source: &str) -> Self {
-        for line in source.lines() {
-            let line = line.trim().to_lowercase();
-            if !line.starts_with("skinparam ") {
-                continue;
-            }
-
-            let parts: Vec<&str> = line[10..].splitn(2, ' ').collect();
-            if parts.len() != 2 {
-                continue;
-            }
-
-            let key = parts[0].trim();
-            let value = parts[1].trim();
-
-            match key {
-                "backgroundcolor" => self.background_color = value.to_string(),
-                "arrowcolor" | "sequencearrowcolor" => self.arrow_color = value.to_string(),
-                "arrowthickness" => {
-                    if let Ok(v) = value.parse() {
-                        self.arrow_thickness = v;
-                    }
-                }
-                "defaultfontcolor" | "arrowfontcolor" => self.font_color = value.to_string(),
-                "defaultfontname" => {
-                    self.font_family = value.to_string();
-                    self.embed_font = false;
-                }
-                "defaultfontsize" => {
-                    if let Ok(v) = value.parse::<f32>() {
-                        self.font_size = v;
-                        self.char_width = v * 0.6;
-                    }
-                }
-                "sequenceparticipantbackgroundcolor" => {
-                    self.participant_bg_color = value.to_string();
-                }
-                "sequenceparticipantbordercolor" => {
-                    self.participant_border_color = value.to_string();
-                }
-                "sequencelifelinebordercolor" => self.lifeline_color = value.to_string(),
-                "classbackgroundcolor" => self.class_bg_color = value.to_string(),
-                "classbordercolor" => self.class_border_color = value.to_string(),
-                _ => {}
-            }
-        }
-
-        self
-    }
 }
 
 // ============================================================================
@@ -276,11 +211,23 @@ pub struct SvgBuilder {
 }
 
 impl SvgBuilder {
-    pub fn new(width: f32, height: f32, style: &DiagramStyle) -> Self {
+    /// Create new SVG builder with optional custom CSS overrides
+    pub fn new(width: f32, height: f32, style: &DiagramStyle, custom_css: Option<&str>) -> Self {
         let mut output = format!(
             r#"<svg xmlns="http://www.w3.org/2000/svg" width="{}" height="{}">"#,
             width, height
         );
+
+        // Embed default CSS styles
+        output.push_str("<style type=\"text/css\">\n");
+        output.push_str(DEFAULT_STYLES_CSS);
+        
+        // Append custom CSS overrides if provided
+        if let Some(css) = custom_css {
+            output.push_str("\n/* Custom style overrides */\n");
+            output.push_str(css);
+        }
+        output.push_str("\n</style>");
 
         // Embed font if enabled
         if style.embed_font {
@@ -288,10 +235,7 @@ impl SvgBuilder {
         }
 
         // Background
-        output.push_str(&format!(
-            r#"<rect width="100%" height="100%" fill="{}"/>"#,
-            style.background_color
-        ));
+        output.push_str(r#"<rect width="100%" height="100%" class="diagram-background"/>"#);
 
         Self { output }
     }
@@ -299,7 +243,74 @@ impl SvgBuilder {
     pub fn push(&mut self, content: &str) {
         self.output.push_str(content);
     }
+    
+    // ========================================================================
+    // CSS class-based methods
+    // ========================================================================
+    
+    /// Draw a rectangle with CSS class
+    pub fn rect_class(&mut self, x: f32, y: f32, w: f32, h: f32, class: &str) {
+        self.output.push_str(&format!(
+            r#"<rect x="{}" y="{}" width="{}" height="{}" class="{}"/>"#,
+            x, y, w, h, class
+        ));
+    }
+    
+    /// Draw a line with CSS class
+    pub fn line_class(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, class: &str) {
+        self.output.push_str(&format!(
+            r#"<line x1="{}" y1="{}" x2="{}" y2="{}" class="{}"/>"#,
+            x1, y1, x2, y2, class
+        ));
+    }
+    
+    /// Draw text with CSS class
+    pub fn text_class(&mut self, x: f32, y: f32, content: &str, class: &str) {
+        self.output.push_str(&format!(
+            r#"<text x="{}" y="{}" class="{}">{}</text>"#,
+            x, y, class, escape_xml(content)
+        ));
+    }
+    
+    /// Draw a polyline with CSS class
+    pub fn polyline_class(&mut self, points: &[(f32, f32)], class: &str, marker_end: &str) {
+        let points_str: String = points
+            .iter()
+            .map(|(x, y)| format!("{},{}", x, y))
+            .collect::<Vec<_>>()
+            .join(" ");
 
+        let marker = if marker_end.is_empty() {
+            String::new()
+        } else {
+            format!(r#" marker-end="{}""#, marker_end)
+        };
+
+        self.output.push_str(&format!(
+            r#"<polyline points="{}" class="{}"{}/>"#,
+            points_str, class, marker
+        ));
+    }
+    
+    /// Draw a polygon with CSS class
+    pub fn polygon_class(&mut self, points: &[(f32, f32)], class: &str) {
+        let points_str: String = points
+            .iter()
+            .map(|(x, y)| format!("{},{}", x, y))
+            .collect::<Vec<_>>()
+            .join(" ");
+
+        self.output.push_str(&format!(
+            r#"<polygon points="{}" class="{}"/>"#,
+            points_str, class
+        ));
+    }
+
+    // ========================================================================
+    // Legacy inline style methods (kept for compatibility)
+    // ========================================================================
+
+    #[allow(dead_code)]
     pub fn line(
         &mut self,
         x1: f32,
@@ -321,6 +332,7 @@ impl SvgBuilder {
         ));
     }
 
+    #[allow(dead_code)]
     pub fn rect(&mut self, x: f32, y: f32, w: f32, h: f32, fill: &str, stroke: &str) {
         self.output.push_str(&format!(
             r#"<rect x="{}" y="{}" width="{}" height="{}" fill="{}" stroke="{}" stroke-width="1"/>"#,
@@ -341,6 +353,7 @@ impl SvgBuilder {
         ));
     }
 
+    #[allow(dead_code)]
     pub fn text_centered(
         &mut self,
         x: f32,
@@ -356,6 +369,7 @@ impl SvgBuilder {
         ));
     }
 
+    #[allow(dead_code)]
     pub fn polyline(
         &mut self,
         points: &[(f32, f32)],
@@ -428,10 +442,17 @@ mod tests {
     }
 
     #[test]
-    fn test_skinparams() {
-        let params = "skinparam BackgroundColor #123456\nskinparam ArrowThickness 2";
-        let style = DiagramStyle::from_skinparams(params);
-        assert_eq!(style.background_color, "#123456");
-        assert_eq!(style.arrow_thickness, 2.0);
+    fn test_extract_custom_css() {
+        let source = "@start_style\n.test { fill: red; }\n@end_style\n@start_uml\n@end_uml";
+        let css = extract_custom_css(source);
+        assert!(css.is_some());
+        assert!(css.unwrap().contains(".test { fill: red; }"));
+    }
+    
+    #[test]
+    fn test_extract_custom_css_none() {
+        let source = "@start_uml\nA -> B: test\n@end_uml";
+        let css = extract_custom_css(source);
+        assert!(css.is_none());
     }
 }

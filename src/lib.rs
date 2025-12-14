@@ -1,6 +1,6 @@
 //! # Pill UML
 //!
-//! A pure Rust PlantUML diagram renderer that generates SVG output.
+//! A pure Rust diagram renderer that generates SVG output.
 //! No Java or external dependencies required.
 //!
 //! ## Supported Diagram Types
@@ -14,40 +14,42 @@
 //! use pill_uml::render_diagram;
 //!
 //! let source = r#"
-//! @startuml
+//! @start_uml
 //! participant Client
 //! participant Server
 //! Client -> Server: Request
 //! Server --> Client: Response
-//! @enduml
+//! @end_uml
 //! "#;
 //!
 //! let svg = render_diagram(source);
 //! ```
 //!
-//! ## Custom Styling
+//! ## Custom Styling with CSS
 //!
-//! ```rust,ignore
-//! use pill_uml::{render_diagram_styled, DiagramStyle};
+//! You can override default styles directly in your `.pilluml` file using
+//! `@start_style` and `@end_style` blocks:
 //!
-//! let style = DiagramStyle::default()
-//!     .with_font_family("Consolas, monospace")
-//!     .with_background_color("#1e1e1e")
-//!     .with_font_color("#d4d4d4");
+//! ```text
+//! @start_style
+//! .participant { fill: #2d2d2d; stroke: #00ff88; }
+//! .message { stroke: #00ccff; }
+//! @end_style
 //!
-//! let source = "@startuml\n@enduml";
-//! let svg = render_diagram_styled(source, &style);
+//! @start_uml
+//! Client -> Server: Request
+//! @end_uml
 //! ```
 
-mod common;
 mod class_diagram;
+mod common;
 mod sequence_diagram;
 
-pub use common::{DiagramStyle, DiagramType};
-pub use class_diagram::{ClassDiagram, ClassDef, RelationType};
-pub use sequence_diagram::{SequenceDiagram, Participant, Message, ArrowStyle};
+pub use class_diagram::{ClassDef, ClassDiagram, RelationType};
+pub use common::{DiagramStyle, DiagramType, DEFAULT_STYLES_CSS};
+pub use sequence_diagram::{ArrowStyle, Message, Participant, SequenceDiagram};
 
-/// Detect the diagram type from PlantUML source
+/// Detect the diagram type from source
 pub fn detect_diagram_type(source: &str) -> DiagramType {
     if class_diagram::is_class_diagram(source) {
         DiagramType::Class
@@ -56,42 +58,20 @@ pub fn detect_diagram_type(source: &str) -> DiagramType {
     }
 }
 
-/// Render a PlantUML diagram to SVG with default styling
+/// Render a diagram to SVG with default styling
 ///
 /// Automatically detects whether it's a sequence or class diagram.
+/// Custom CSS can be embedded in the source using @start_style/@end_style blocks.
 pub fn render_diagram(source: &str) -> String {
     render_diagram_styled(source, &DiagramStyle::default())
 }
 
-/// Render a PlantUML diagram to SVG with custom styling
+/// Render a diagram to SVG with custom DiagramStyle
 pub fn render_diagram_styled(source: &str, style: &DiagramStyle) -> String {
     match detect_diagram_type(source) {
         DiagramType::Sequence => sequence_diagram::render(source, style),
         DiagramType::Class => class_diagram::render(source, style),
     }
-}
-
-/// Render with PlantUML skinparam style string (for compatibility)
-pub fn render_with_skinparams(source: &str, skinparams: &str) -> String {
-    let style = DiagramStyle::from_skinparams(skinparams);
-    render_diagram_styled(source, &style)
-}
-
-/// Render with optional base style file
-/// 
-/// Base style provides defaults, but skinparams in the source file override them.
-pub fn render_with_base_style(source: &str, base_style: Option<&str>) -> String {
-    let mut style = DiagramStyle::default();
-    
-    // Apply base style first (if provided)
-    if let Some(base) = base_style {
-        style = DiagramStyle::from_skinparams(base);
-    }
-    
-    // Apply inline skinparams from source (these override base style)
-    style = style.merge_skinparams(source);
-    
-    render_diagram_styled(source, &style)
 }
 
 #[cfg(test)]
@@ -100,19 +80,19 @@ mod tests {
 
     #[test]
     fn test_detect_sequence_diagram() {
-        let source = "@startuml\nparticipant A\nA -> B: msg\n@enduml";
+        let source = "@start_uml\nparticipant A\nA -> B: msg\n@end_uml";
         assert_eq!(detect_diagram_type(source), DiagramType::Sequence);
     }
 
     #[test]
     fn test_detect_class_diagram() {
-        let source = "@startuml\nclass Foo {}\n@enduml";
+        let source = "@start_uml\nclass Foo {}\n@end_uml";
         assert_eq!(detect_diagram_type(source), DiagramType::Class);
     }
 
     #[test]
     fn test_render_sequence() {
-        let source = "@startuml\nA -> B: hello\n@enduml";
+        let source = "@start_uml\nA -> B: hello\n@end_uml";
         let svg = render_diagram(source);
         assert!(svg.contains("<svg"));
         assert!(svg.contains("hello"));
@@ -120,9 +100,16 @@ mod tests {
 
     #[test]
     fn test_render_class() {
-        let source = "@startuml\nclass Engine {}\n@enduml";
+        let source = "@start_uml\nclass Engine {}\n@end_uml";
         let svg = render_diagram(source);
         assert!(svg.contains("<svg"));
         assert!(svg.contains("Engine"));
+    }
+
+    #[test]
+    fn test_custom_css() {
+        let source = "@start_style\n.participant { fill: #ff0000; }\n@end_style\n@start_uml\nA -> B: test\n@end_uml";
+        let svg = render_diagram(source);
+        assert!(svg.contains("fill: #ff0000"));
     }
 }

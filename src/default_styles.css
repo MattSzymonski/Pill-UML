@@ -1,0 +1,274 @@
+/* Pill UML Default Styles */
+/* This file defines CSS classes for all diagram elements */
+
+/* ============================================================================
+   General / Shared
+   ============================================================================ */
+
+.diagram-background {
+    fill: #FFFFFF;
+}
+
+.diagram-text {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #333333;
+}
+
+.diagram-text-bold {
+    font-weight: bold;
+}
+
+.diagram-text-italic {
+    font-style: italic;
+}
+
+.diagram-text-centered {
+    text-anchor: middle;
+}
+
+.diagram-text-underline {
+    text-decoration: underline;
+}
+
+/* ============================================================================
+   Sequence Diagram
+   ============================================================================ */
+
+/* Participant box */
+.participant {
+    fill: #F0F0F0;
+    stroke: #333333;
+    stroke-width: 1;
+}
+
+.participant-text {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #333333;
+    text-anchor: middle;
+}
+
+/* Lifeline */
+.lifeline {
+    stroke: #666666;
+    stroke-width: 1;
+    stroke-dasharray: 5, 5;
+}
+
+/* Messages / Arrows */
+.message {
+    stroke: #333333;
+    stroke-width: 1.5;
+    fill: none;
+}
+
+.message-dashed {
+    stroke-dasharray: 5, 5;
+}
+
+.message-text {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #333333;
+    text-anchor: middle;
+}
+
+.arrow-head {
+    fill: #333333;
+}
+
+.arrow-head-open {
+    fill: none;
+    stroke: #333333;
+    stroke-width: 1.5;
+}
+
+/* Alt/Else blocks */
+.alt-box {
+    fill: none;
+    stroke: #999999;
+    stroke-width: 1;
+}
+
+.alt-label-box {
+    fill: #FAFAFA;
+    stroke: #999999;
+}
+
+.alt-label-text {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 10px;
+    fill: #333333;
+}
+
+.alt-condition-text {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #333333;
+    font-weight: bold;
+}
+
+.alt-divider {
+    stroke: #999999;
+    stroke-width: 1;
+    stroke-dasharray: 5, 5;
+}
+
+/* Divider */
+.divider-line {
+    stroke: #333333;
+    stroke-width: 1;
+    stroke-dasharray: 5, 5;
+}
+
+.divider-box {
+    fill: #FFFFFF;
+    stroke: #333333;
+    stroke-width: 1;
+}
+
+.divider-text {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #333333;
+    text-anchor: middle;
+}
+
+/* Notes */
+.note {
+    fill: #FFFFCC;
+    stroke: #333333;
+    stroke-width: 1;
+}
+
+.note-text {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #333333;
+}
+
+/* ============================================================================
+   Class Diagram
+   ============================================================================ */
+
+/* Class box */
+.class {
+    fill: #F0F0F0;
+    stroke: #333333;
+    stroke-width: 1;
+}
+
+.class-interface {
+    fill: #E8F4E8;
+    stroke: #333333;
+    stroke-width: 1;
+}
+
+.class-abstract {
+    fill: #F0F0F0;
+    stroke: #333333;
+    stroke-width: 1;
+}
+
+.class-enum {
+    fill: #F0E8F4;
+    stroke: #333333;
+    stroke-width: 1;
+}
+
+/* Class name */
+.class-name {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #333333;
+    font-weight: bold;
+    text-anchor: middle;
+}
+
+.class-name-abstract {
+    font-style: italic;
+}
+
+.class-name-interface {
+    font-style: italic;
+}
+
+/* Stereotype */
+.class-stereotype {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 10px;
+    fill: #666666;
+    text-anchor: middle;
+}
+
+/* Compartment separator */
+.class-separator {
+    stroke: #333333;
+    stroke-width: 1;
+}
+
+/* Fields */
+.class-field {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #333333;
+}
+
+.class-field-static {
+    text-decoration: underline;
+}
+
+/* Methods */
+.class-method {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: #333333;
+}
+
+.class-method-static {
+    text-decoration: underline;
+}
+
+.class-method-abstract {
+    font-style: italic;
+}
+
+/* Relationships */
+.relationship {
+    stroke: #333333;
+    stroke-width: 1.5;
+    fill: none;
+}
+
+.relationship-dashed {
+    stroke-dasharray: 5, 5;
+}
+
+.relationship-label {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 10px;
+    fill: #333333;
+    text-anchor: middle;
+}
+
+/* Relationship markers */
+.marker-triangle {
+    fill: white;
+    stroke: #333333;
+    stroke-width: 1;
+}
+
+.marker-arrow {
+    fill: #333333;
+}
+
+.marker-diamond-filled {
+    fill: #333333;
+}
+
+.marker-diamond-empty {
+    fill: white;
+    stroke: #333333;
+    stroke-width: 1;
+}
