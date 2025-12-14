@@ -8,7 +8,6 @@ skinparam RoundCorner 0
 skinparam Shadowing false
 
 ' === Fonts ===
-skinparam DefaultFontName momo_trust
 skinparam DefaultFontSize 14
 skinparam DefaultFontColor #e0e0e0
 
